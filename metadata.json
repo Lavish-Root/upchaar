@@ -1,0 +1,8 @@
+{
+  "name": "AI Upchaar",
+  "description": "A hybrid telemedicine system for rural healthcare access featuring an AI-driven IVR simulation, patient portal, and doctor dashboard.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ]
+}
