@@ -409,7 +409,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
         <div className="h-full flex flex-col md:flex-row bg-slate-50 overflow-hidden">
             <div className="hidden md:flex h-full"><Sidebar /></div>
             <div className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-0">
-                <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center">
+                <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="flex items-center gap-2">
                         <button className="md:hidden p-1.5 -ml-2 text-slate-500 hover:bg-slate-100 rounded-full transition" onClick={() => setCurrentView('ACTIVE_CASES')}>
                             <svg xmlns="http://www.w0.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
@@ -433,7 +433,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                     ))}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
                     <div className="flex justify-between items-center mb-6">
                         <div>
                             <h3 className="font-bold text-slate-800 text-lg">Preventive Care Management</h3>
@@ -446,8 +446,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
                         {/* View Authored & Mock Data Combined */}
-                        {wellnessTab === 'REMEDIES' && [...authoredRemedies, ...MOCK_REMEDIES].map((r: any) => (
-                            <div key={r.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-amber-400 transition group">
+                        {wellnessTab === 'REMEDIES' && [...authoredRemedies, ...MOCK_REMEDIES].map((r: any, index) => (
+                            <div key={r.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-amber-400 transition group animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                                 <div className="flex justify-between items-start mb-2">
                                     <span className="text-[10px] font-bold text-amber-600 uppercase bg-amber-50 px-2 py-0.5 rounded-full">{r.season} • {r.ailment}</span>
                                     <div className="flex items-center gap-1 text-amber-500 text-xs font-bold"><Star size={12} fill="currentColor" /> {r.rating || 5}</div>
@@ -460,8 +460,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                                 </div>
                             </div>
                         ))}
-                        {wellnessTab === 'TIPS' && [...authoredTips, ...MOCK_HEALTH_TIPS].map((t: any) => (
-                            <div key={t.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-blue-400 transition group">
+                        {wellnessTab === 'TIPS' && [...authoredTips, ...MOCK_HEALTH_TIPS].map((t: any, index) => (
+                            <div key={t.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-blue-400 transition group animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                                 <div className="flex justify-between items-start mb-2">
                                     <span className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded-full">{t.category}</span>
                                     <span className="text-[10px] text-slate-400">{new Date(t.timestamp).toLocaleDateString()}</span>
@@ -474,8 +474,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                                 </div>
                             </div>
                         ))}
-                        {wellnessTab === 'ACTIVITIES' && [...authoredActivities, ...MOCK_WELLNESS_ACTIVITIES].map((a: any) => (
-                            <div key={a.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-emerald-400 transition group">
+                        {wellnessTab === 'ACTIVITIES' && [...authoredActivities, ...MOCK_WELLNESS_ACTIVITIES].map((a: any, index) => (
+                            <div key={a.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-emerald-400 transition group animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                                 <div className="flex justify-between items-start mb-2">
                                     <span className="text-[10px] font-bold text-emerald-600 uppercase bg-emerald-50 px-2 py-0.5 rounded-full">{a.type} • {a.concern || 'ALL'}</span>
                                     <span className="text-[10px] text-slate-400">{a.duration}</span>
@@ -575,7 +575,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
             <div className="h-full flex flex-col md:flex-row bg-slate-50 overflow-hidden">
                 <div className="hidden md:flex h-full"><Sidebar /></div>
                 <div className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-0">
-                    <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center">
+                    <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-center gap-2">
                             <button className="md:hidden p-1.5 -ml-2 text-slate-500 hover:bg-slate-100 rounded-full transition" onClick={() => setCurrentView('ACTIVE_CASES')}>
                                 <svg xmlns="http://www.w0.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
@@ -587,7 +587,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                         <HeaderAvatar />
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
                         {/* 1. IVR System Health */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -783,7 +783,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
             <div className="h-full flex flex-col md:flex-row bg-slate-50 overflow-hidden">
                 <div className="hidden md:flex h-full"><Sidebar /></div>
                 <div className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-0">
-                    <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center">
+                    <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-center gap-2">
                             <button className="md:hidden p-1.5 -ml-2 text-slate-500 hover:bg-slate-100 rounded-full transition" onClick={() => setCurrentView('ACTIVE_CASES')}>
                                 <svg xmlns="http://www.w0.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
@@ -792,7 +792,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                         </div>
                         <HeaderAvatar />
                     </div>
-                    <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
+                    <div className="flex-1 p-8 overflow-y-auto bg-slate-50 animate-in fade-in slide-in-from-bottom-8 duration-700">
                         <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                             <div className="bg-gradient-to-r from-slate-800 to-slate-900 h-32 relative">
                                 <div className="absolute top-4 right-4"><span className="bg-white/10 text-white text-xs font-bold px-2 py-1 rounded border border-white/20 backdrop-blur-sm">VERIFIED DOCTOR</span></div>
@@ -829,7 +829,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
         <div className="h-full flex flex-col bg-slate-50 md:flex-row overflow-hidden relative animate-in fade-in duration-500">
             <Sidebar />
             <div className="w-full md:w-1/3 lg:w-1/4 bg-white border-r border-slate-200 flex flex-col h-full z-10 pb-20 md:pb-0">
-                <div className="p-4 border-b border-slate-200 shrink-0">
+                <div className="p-4 border-b border-slate-200 shrink-0 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="flex justify-between items-center mb-4 md:hidden">
                         <span className="font-bold text-slate-900 text-lg tracking-tight">{user.name}</span>
                         <div className="flex gap-2 items-center">
@@ -845,7 +845,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                         <button onClick={() => setFilter('CRITICAL')} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filter === 'CRITICAL' ? 'bg-red-500 text-white shadow-md' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}>Critical</button>
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto pb-4">
+                <div className="flex-1 overflow-y-auto pb-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
                     {filteredCases.length === 0 ? (<div className="p-8 text-center text-slate-400 text-sm animate-in fade-in zoom-in-95 duration-300">No cases found</div>) : (
                         filteredCases.map((c, index) => {
                             const patient = patients.find(p => p.id === c.patientId);
@@ -872,7 +872,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                 </div>
             </div>
             <div className={`flex-1 flex flex-col h-full overflow-hidden transition-all duration-500 absolute md:relative inset-0 bg-slate-50 z-20 md:z-auto ${selectedCase ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
-                <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4 md:px-6 justify-between shrink-0 shadow-sm">
+                <div className="h-16 bg-white border-b border-slate-200 flex items-center px-4 md:px-6 justify-between shrink-0 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="flex gap-4 md:gap-6 items-center">
                         <button className="md:hidden p-2 -ml-2 text-slate-500 hover:text-slate-800 bg-slate-100 rounded-full" onClick={() => setSelectedCase(null)}>
                             <svg xmlns="http://www.w0.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
