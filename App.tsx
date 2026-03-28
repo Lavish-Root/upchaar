@@ -14,10 +14,10 @@ function App() {
   const [currentView, setCurrentView] = useState<'LOGIN' | 'PATIENT' | 'IVR' | 'DOCTOR'>('LOGIN');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAppLoading, setIsAppLoading] = useState(true);
-  
+
   // Existing States (Strict Freeze)
   const [cases, setCases] = useState<MedicalCase[]>(MOCK_CASES);
-  const [appointments, setAppointments] = useState<Appointment[]>([]); 
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [stats, setStats] = useState(MOCK_STATS);
 
   // 🧾 NEW OFFLINE STORAGE (Isolated) - Added typing with OfflineSession
@@ -68,21 +68,21 @@ function App() {
 
   const handleUpdateStatus = (caseId: string, status: CaseStatus, prescription?: string, notes?: string) => {
     setCases(prev => prev.map(c => {
-        if (c.id === caseId) {
-            return { 
-              ...c, 
-              status, 
-              prescription: prescription || c.prescription,
-              doctorNotes: notes || c.doctorNotes,
-              approvalTimestamp: status === 'APPROVED' ? new Date().toISOString() : c.approvalTimestamp,
-              deliveryEta: status === 'APPROVED' ? 'Dispatched (20 min)' : c.deliveryEta 
-            };
-        }
-        return c;
+      if (c.id === caseId) {
+        return {
+          ...c,
+          status,
+          prescription: prescription || c.prescription,
+          doctorNotes: notes || c.doctorNotes,
+          approvalTimestamp: status === 'APPROVED' ? new Date().toISOString() : c.approvalTimestamp,
+          deliveryEta: status === 'APPROVED' ? 'Dispatched (20 min)' : c.deliveryEta
+        };
+      }
+      return c;
     }));
-    
+
     if (status === 'APPROVED') {
-        setStats(prev => ({ ...prev, deliveriesInProgress: prev.deliveriesInProgress + 1 }));
+      setStats(prev => ({ ...prev, deliveriesInProgress: prev.deliveriesInProgress + 1 }));
     }
   };
 
@@ -105,7 +105,7 @@ function App() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
         <div className="w-20 h-20 bg-emerald-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl animate-pulse ring-4 ring-emerald-100">
-           <Logo className="w-12 h-12" />
+          <Logo className="w-12 h-12" />
         </div>
         <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
         <p className="text-slate-500 mt-4 text-sm font-medium tracking-wide uppercase">Initializing AI Upchaar...</p>
@@ -119,24 +119,24 @@ function App() {
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
-              <button onClick={() => {}} className="flex items-center gap-3 focus:outline-none">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-lg flex items-center justify-center text-white shadow-md">
-                  <Logo className="w-6 h-6" />
+              <button onClick={() => { }} className="flex items-center gap-2 sm:gap-3 focus:outline-none">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-lg flex items-center justify-center text-white shadow-md">
+                  <Logo className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold tracking-tight text-slate-800 leading-none">AI Upchaar</span>
-                  <span className="text-[10px] font-medium text-emerald-600 tracking-wider uppercase">Healthcare Access</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 leading-none">AI Upchaar</span>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-emerald-600 tracking-wider uppercase">Healthcare Access</span>
                 </div>
               </button>
-              
+
               <div className="flex items-center space-x-4">
                 {currentUser && (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4">
                     <span className="text-sm font-medium text-slate-700 hidden sm:block">
-                       {currentUser.role === UserRole.DOCTOR ? `Dr. ${currentUser.name}` : currentUser.name}
+                      {currentUser.role === UserRole.DOCTOR ? `Dr. ${currentUser.name}` : currentUser.name}
                     </span>
-                    <button onClick={handleLogout} className="flex items-center gap-1 px-3 py-2 rounded-full text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 transition">
-                      <LogOut size={16} /> Logout
+                    <button onClick={handleLogout} className="flex items-center gap-1 px-2 sm:px-3 py-2 rounded-full text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 transition">
+                      <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
                     </button>
                   </div>
                 )}
@@ -156,24 +156,24 @@ function App() {
           <LoginScreen onLoginSuccess={handleLoginSuccess} onIVRSelect={() => setCurrentView('IVR')} />
         )}
         {currentView === 'PATIENT' && currentUser && (
-          <PatientPortal 
-             user={currentUser} 
-             patientHistory={cases.filter(c => c.patientId === currentUser.id)}
-             appointments={appointments.filter(a => a.patientId === currentUser.id)}
-             onSubmitCase={handleNewCase} 
-             onBookAppointment={handleBookAppointment}
-             onLogout={handleLogout} 
+          <PatientPortal
+            user={currentUser}
+            patientHistory={cases.filter(c => c.patientId === currentUser.id)}
+            appointments={appointments.filter(a => a.patientId === currentUser.id)}
+            onSubmitCase={handleNewCase}
+            onBookAppointment={handleBookAppointment}
+            onLogout={handleLogout}
           />
         )}
         {currentView === 'IVR' && <IVRSimulator onSaveOfflineSession={handleSaveOfflineSession} />}
         {currentView === 'DOCTOR' && currentUser && (
-          <DoctorDashboard 
+          <DoctorDashboard
             user={currentUser}
-            cases={cases} 
-            patients={MOCK_PATIENTS} 
-            stats={stats} 
+            cases={cases}
+            patients={MOCK_PATIENTS}
+            stats={stats}
             offlineSessions={offlineSessions}
-            onUpdateStatus={handleUpdateStatus} 
+            onUpdateStatus={handleUpdateStatus}
             onLogout={handleLogout}
           />
         )}

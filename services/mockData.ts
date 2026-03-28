@@ -218,17 +218,17 @@ export const MOCK_CASES: MedicalCase[] = [
     severity: CaseSeverity.MODERATE,
     status: CaseStatus.PENDING_APPROVAL,
     // Using MP3 for better compatibility across browsers (Safari, etc.)
-    audioUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3', 
+    audioUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3',
     patientLocation: {
       lat: 30.9010,
       lng: 75.8573,
       address: 'Village Manwal, Ludhiana, Punjab'
     },
     transcript: [
-        { id: '1', role: 'model', text: 'Namaste, tell me your symptoms.', timestamp: new Date() },
-        { id: '2', role: 'user', text: 'I have high fever since last night and shivering.', timestamp: new Date() },
-        { id: '3', role: 'model', text: 'Do you have body ache?', timestamp: new Date() },
-        { id: '4', role: 'user', text: 'Yes, lots of pain in back and legs.', timestamp: new Date() }
+      { id: '1', role: 'model', text: 'Namaste, tell me your symptoms.', timestamp: new Date() },
+      { id: '2', role: 'user', text: 'I have high fever since last night and shivering.', timestamp: new Date() },
+      { id: '3', role: 'model', text: 'Do you have body ache?', timestamp: new Date() },
+      { id: '4', role: 'user', text: 'Yes, lots of pain in back and legs.', timestamp: new Date() }
     ],
     prescription: 'Paracetamol 500mg (1 tab TDS for 3 days)\nDrink plenty of fluids\nRest for 2 days',
     precautions: ['Isolate from family members', 'Monitor temperature every 4 hours', 'Use mosquito net'],
@@ -251,9 +251,9 @@ export const MOCK_CASES: MedicalCase[] = [
       address: 'Sector 4, Amritsar, Punjab'
     },
     transcript: [
-         { id: '1', role: 'user', text: 'I have a red rash on my arm.', timestamp: new Date() },
-         { id: '2', role: 'model', text: 'Is it itchy or painful?', timestamp: new Date() },
-         { id: '3', role: 'user', text: 'Very itchy, no pain.', timestamp: new Date() }
+      { id: '1', role: 'user', text: 'I have a red rash on my arm.', timestamp: new Date() },
+      { id: '2', role: 'model', text: 'Is it itchy or painful?', timestamp: new Date() },
+      { id: '3', role: 'user', text: 'Very itchy, no pain.', timestamp: new Date() }
     ],
     prescription: 'Cetirizine 10mg (1 tab OD for 5 days)\nCalamine Lotion (Apply twice daily)',
     precautions: ['Avoid scratching', 'Keep area clean and dry', 'Wear loose cotton clothes'],
@@ -272,14 +272,14 @@ export const MOCK_CASES: MedicalCase[] = [
     // Using MP3 for better compatibility
     audioUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3',
     patientLocation: {
-        lat: 30.3398,
-        lng: 76.3869,
-        address: 'Near Bus Stand, Patiala, Punjab'
+      lat: 30.3398,
+      lng: 76.3869,
+      address: 'Near Bus Stand, Patiala, Punjab'
     },
     transcript: [
-        { id: '1', role: 'user', text: 'Chest hurting... cannot breathe.', timestamp: new Date() },
-        { id: '2', role: 'model', text: 'Is the pain spreading to your arm?', timestamp: new Date() },
-        { id: '3', role: 'user', text: 'Yes, left arm paining. Sweating too much.', timestamp: new Date() }
+      { id: '1', role: 'user', text: 'Chest hurting... cannot breathe.', timestamp: new Date() },
+      { id: '2', role: 'model', text: 'Is the pain spreading to your arm?', timestamp: new Date() },
+      { id: '3', role: 'user', text: 'Yes, left arm paining. Sweating too much.', timestamp: new Date() }
     ],
     precautions: ['Do not walk or exert', 'Take Aspirin immediately if available', 'Wait for ambulance'],
     doctorNotes: 'Immediate ambulance dispatch requested via automated system.'

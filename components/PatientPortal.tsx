@@ -6,7 +6,7 @@ import {
   Home, Volume2, Calendar, Truck, UserPlus, Image as ImageIcon,
   CreditCard, Banknote, Navigation, Smartphone, CheckCircle,
   Leaf, Sun, Snowflake, CloudRain, Zap, Heart, Info, ThumbsUp,
-  ExternalLink
+  ExternalLink, Smile
 } from 'lucide-react';
 import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity } from '../types';
 import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals } from '../services/geminiService';
@@ -26,6 +26,13 @@ interface PatientPortalProps {
   onLogout: () => void;
 }
 
+const FULL_EMOJI_LIST = [
+  '❤️', '😘', '👍', '😂', '😑', '🔥', '😍', '🙃', '🤣',
+  '🙄', '😐', '😞', '😅', '😶', '✨', '🫠', '😶', '😮',
+  '🤤', '🫣', '🥹', '😁', '❣️', '😔', '😬', '🎉', '🌦️',
+  '💯', '👎', '😠', '🙏', '🤯', '😓', '🎊', '😰', '🙌'
+];
+
 type ViewState = 'HOME' | 'CONSULT_CHAT' | 'CONSULT_VOICE' | 'TRIAGE_RESULT' | 'FEEDBACK' | 'HISTORY' | 'BOOK_APPOINTMENT' | 'LOCATE_NEARBY' | 'DOCTOR_CONNECT' | 'HOME_REMEDIES' | 'WELLNESS_HUB' | 'DOCTOR_TIPS';
 
 const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = [], appointments = [], onSubmitCase, onBookAppointment, onLogout }) => {
@@ -38,9 +45,63 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');
 
+  // Doctor Tips Interaction State
+  const [tipReactions, setTipReactions] = useState<Record<string, string>>({});
+  const [tipComments, setTipComments] = useState<Record<string, Array<{ id: string, text: string, author: string, time: string }>>>({
+    'T-001': [
+      { id: 'c1', text: 'This is very helpful! I will try to get some sun tomorrow morning.', author: 'Ramesh Kumar', time: '2 hours ago' },
+      { id: 'c2', text: 'Does it have to be direct sunlight or works through a window?', author: 'Sunita Devi', time: '1 hour ago' },
+      { id: 'c3', text: 'Dr. Sharma, can I get sunlight in the evening instead?', author: 'Vikram Singh', time: '45 mins ago' },
+      { id: 'c4', text: 'I started doing this and my energy levels are much better.', author: 'Anita Kaur', time: '15 mins ago' }
+    ],
+    'T-002': [
+      { id: 'c5', text: 'I started doing this last week and my acidity is completely gone. Thank you doctor!', author: 'Gurpreet Singh', time: '5 hours ago' },
+      { id: 'c6', text: 'Is 7 PM a good time for dinner?', author: 'Balwinder Singh', time: '3 hours ago' },
+      { id: 'c7', text: 'Tried it yesterday, definitely slept better!', author: 'Priya Sharma', time: 'Just now' }
+    ],
+    'T-003': [
+      { id: 'c8', text: 'I always forget to drink water, keeping a pot nearby is a great idea.', author: 'Ramesh Kumar', time: '1 day ago' },
+      { id: 'c9', text: 'Should the water be cold or room temperature?', author: 'Sunita Devi', time: '12 hours ago' }
+    ]
+  });
+  const [activeTipComments, setActiveTipComments] = useState<string | null>(null);
+  const [activeReactionDrawer, setActiveReactionDrawer] = useState<string | null>(null);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [activeExpandedEmojiPicker, setActiveExpandedEmojiPicker] = useState<string | null>(null);
+  const [commentInput, setCommentInput] = useState('');
+  const [showCommentEmojiPicker, setShowCommentEmojiPicker] = useState(false);
+
   const [selectedRemedy, setSelectedRemedy] = useState<HomeRemedy | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<WellnessActivity | null>(null);
 
+  // Remedy UI interactions state
+  const [likedRemedies, setLikedRemedies] = useState<Record<string, boolean>>({});
+  const [remedyLikeCounts, setRemedyLikeCounts] = useState<Record<string, number>>({});
+  const [ratingInputFor, setRatingInputFor] = useState<string | null>(null);
+  const [ratedRemedies, setRatedRemedies] = useState<Record<string, number>>({});
+
+  const getInitialLikes = (id: string) => {
+    return 100 + (id.length * 7);
+  };
+
+  const handleLikeRemedy = (id: string) => {
+    if (likedRemedies[id]) return;
+    setLikedRemedies(prev => ({ ...prev, [id]: true }));
+    setRemedyLikeCounts(prev => ({
+      ...prev,
+      [id]: (prev[id] !== undefined ? prev[id] : getInitialLikes(id)) + 1
+    }));
+  };
+
+  const handleSubmitRating = (id: string, rating: number) => {
+    setRatedRemedies(prev => ({ ...prev, [id]: rating }));
+    setRatingInputFor(id);
+
+    // Auto-hide the success message after 2.5 seconds
+    setTimeout(() => {
+      setRatingInputFor(prev => prev === id ? null : prev);
+    }, 2500);
+  };
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
 
@@ -508,103 +569,110 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   };
 
   const renderHome = () => (
-    <div className="flex flex-col h-full bg-slate-50 p-6 overflow-y-auto">
-      <div className="mb-6 text-center flex flex-col items-center">
+    <div className="flex flex-col h-full bg-slate-50 p-3 sm:p-6 overflow-y-auto overflow-x-hidden">
+      <div className="mb-6 text-center flex flex-col items-center animate-in fade-in slide-in-from-top-4 duration-500">
         <Logo className="w-12 h-12 text-emerald-600 mb-3" />
         <h1 className="text-2xl font-bold text-slate-800">Namaste, {user.name}</h1>
         <p className="text-slate-500 font-medium">Healthcare for Every Village</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
         <button
           onClick={() => { initChat(false); setCurrentView('CONSULT_CHAT'); }}
-          className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-2 hover:border-emerald-500 hover:shadow-md transition group"
+          className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-1.5 sm:gap-2 hover:border-emerald-500 hover:shadow-md transition group animate-in zoom-in-95 fade-in duration-300"
+          style={{ animationDelay: '75ms', animationFillMode: 'both' }}
         >
           <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 group-hover:scale-110 transition">
             <MessageSquare size={24} />
           </div>
-          <span className="font-semibold text-slate-800 text-sm">Chat AI</span>
+          <span className="font-semibold text-slate-800 text-[11.5px] sm:text-sm">Chat AI</span>
         </button>
         <button
           onClick={() => { initChat(true); setCurrentView('CONSULT_VOICE'); }}
-          className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-2 hover:border-blue-500 hover:shadow-md transition group"
+          className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-1.5 sm:gap-2 hover:border-blue-500 hover:shadow-md transition group animate-in zoom-in-95 fade-in duration-300"
+          style={{ animationDelay: '150ms', animationFillMode: 'both' }}
         >
           <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition">
             <Mic size={24} />
           </div>
-          <span className="font-semibold text-slate-800 text-sm">Voice AI</span>
+          <span className="font-semibold text-slate-800 text-[11.5px] sm:text-sm">Voice AI</span>
         </button>
         <button
           onClick={() => setCurrentView('LOCATE_NEARBY')}
-          className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-2 hover:border-amber-500 hover:shadow-md transition group"
+          className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-1.5 sm:gap-2 hover:border-amber-500 hover:shadow-md transition group animate-in zoom-in-95 fade-in duration-300"
+          style={{ animationDelay: '225ms', animationFillMode: 'both' }}
         >
           <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 group-hover:scale-110 transition">
             <MapPin size={24} />
           </div>
-          <span className="font-semibold text-slate-800 text-sm">Nearby Help</span>
+          <span className="font-semibold text-slate-800 text-[11.5px] sm:text-sm">Nearby Help</span>
         </button>
         <button
           onClick={() => {
             setSelectedHospital(null);
             setCurrentView('BOOK_APPOINTMENT');
           }}
-          className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-2 hover:border-purple-500 hover:shadow-md transition group"
+          className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-1.5 sm:gap-2 hover:border-purple-500 hover:shadow-md transition group animate-in zoom-in-95 fade-in duration-300"
+          style={{ animationDelay: '300ms', animationFillMode: 'both' }}
         >
           <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 group-hover:scale-110 transition">
             <Calendar size={24} />
           </div>
-          <span className="font-semibold text-slate-800 text-sm">Book Appt</span>
+          <span className="font-semibold text-slate-800 text-[11.5px] sm:text-sm">Book Appt</span>
         </button>
       </div>
 
       <div className="mb-6">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Wellness & Support</h3>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1 animate-in fade-in duration-300" style={{ animationDelay: '375ms', animationFillMode: 'both' }}>Wellness & Support</h3>
         <div className="space-y-3">
           <button
             onClick={() => setCurrentView('HOME_REMEDIES')}
-            className="w-full bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-amber-100 transition group text-left"
+            className="w-full bg-amber-50 border border-amber-100 p-3 sm:p-4 rounded-2xl flex items-center gap-3 sm:gap-4 hover:bg-amber-100 transition group text-left animate-in slide-in-from-right-4 fade-in duration-500"
+            style={{ animationDelay: '450ms', animationFillMode: 'both' }}
           >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 shadow-sm group-hover:scale-110 transition">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 shadow-sm group-hover:scale-110 transition shrink-0">
               <Leaf size={20} />
             </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-slate-800 text-sm">Seasonal Home Remedies</h4>
-              <p className="text-xs text-slate-500">Doctor-verified natural care</p>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm leading-tight">Seasonal Home Remedies</h4>
+              <p className="text-[9px] sm:text-xs text-slate-500 truncate leading-tight mt-0.5">Doctor-verified natural care</p>
             </div>
-            <div className="p-1 bg-white rounded-full shadow-sm">
+            <div className="p-1 bg-white rounded-full shadow-sm shrink-0">
               {getSeasonIcon(currentSeason)}
             </div>
           </button>
 
           <button
             onClick={() => setCurrentView('WELLNESS_HUB')}
-            className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-emerald-100 transition group text-left"
+            className="w-full bg-emerald-50 border border-emerald-100 p-3 sm:p-4 rounded-2xl flex items-center gap-3 sm:gap-4 hover:bg-emerald-100 transition group text-left animate-in slide-in-from-right-4 fade-in duration-500"
+            style={{ animationDelay: '525ms', animationFillMode: 'both' }}
           >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 transition">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 transition shrink-0">
               <Zap size={20} />
             </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-slate-800 text-sm">Yoga & Immunity</h4>
-              <p className="text-xs text-slate-500">Guided exercises for strength</p>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm leading-tight">Yoga & Immunity</h4>
+              <p className="text-[9px] sm:text-xs text-slate-500 truncate leading-tight mt-0.5">Guided exercises for strength</p>
             </div>
           </button>
 
           <button
             onClick={() => setCurrentView('DOCTOR_TIPS')}
-            className="w-full bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-center gap-4 hover:bg-blue-100 transition group text-left"
+            className="w-full bg-blue-50 border border-blue-100 p-3 sm:p-4 rounded-2xl flex items-center gap-3 sm:gap-4 hover:bg-blue-100 transition group text-left animate-in slide-in-from-right-4 fade-in duration-500"
+            style={{ animationDelay: '600ms', animationFillMode: 'both' }}
           >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-110 transition">
+            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-110 transition shrink-0">
               <Heart size={20} />
             </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-slate-800 text-sm">Doctor's Daily Tips</h4>
-              <p className="text-xs text-slate-500">Professional lifestyle advice</p>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm leading-tight">Doctor's Daily Tips</h4>
+              <p className="text-[9px] sm:text-xs text-slate-500 truncate leading-tight mt-0.5">Professional lifestyle advice</p>
             </div>
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '675ms', animationFillMode: 'both' }}>
         <div className="p-4 border-b border-slate-100 flex justify-between items-center">
           <h3 className="font-semibold text-slate-700 flex items-center gap-2 text-sm"><History size={16} /> Recent Activity</h3>
           <button onClick={() => setCurrentView('HISTORY')} className="text-xs text-emerald-600 font-medium">View All</button>
@@ -639,11 +707,11 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const renderHomeRemedies = () => (
     <div className="flex flex-col h-full bg-slate-50">
-      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3">
+      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
         <button onClick={() => setCurrentView('HOME')}><ArrowLeft size={24} className="text-slate-500" /></button>
         <h2 className="font-bold text-slate-800">Home Remedies</h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase">Current Season</p>
@@ -656,11 +724,12 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
         <p className="text-xs text-slate-500 px-1 font-medium">Recommended for common seasonal illnesses:</p>
 
-        {MOCK_REMEDIES.filter(r => r.season === currentSeason || r.season === Season.ALL).map(remedy => (
+        {MOCK_REMEDIES.filter(r => r.season === currentSeason || r.season === Season.ALL).map((remedy, index) => (
           <div
             key={remedy.id}
             onClick={() => setSelectedRemedy(remedy)}
-            className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-400 cursor-pointer transition group"
+            className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-400 cursor-pointer transition group animate-in zoom-in-95 fade-in duration-300"
+            style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
           >
             <div className="flex justify-between items-start mb-2">
               <h4 className="font-bold text-slate-800 group-hover:text-amber-700 transition">{remedy.title}</h4>
@@ -681,12 +750,12 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
       {selectedRemedy && (
         <div className="absolute inset-0 bg-white z-[60] flex flex-col animate-in slide-in-from-right duration-300">
-          <div className="p-4 border-b flex items-center justify-between">
+          <div className="p-4 border-b flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
             <button onClick={() => setSelectedRemedy(null)}><ArrowLeft size={24} className="text-slate-500" /></button>
             <h2 className="font-bold text-slate-800">Preparation Guide</h2>
             <div className="w-6"></div>
           </div>
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="bg-amber-50 rounded-3xl p-6 text-center mb-8">
               <Leaf className="w-12 h-12 text-amber-600 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-slate-800 mb-1">{selectedRemedy.title}</h3>
@@ -700,7 +769,11 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 </h4>
                 <ul className="grid grid-cols-1 gap-2">
                   {selectedRemedy.ingredients.map((item, idx) => (
-                    <li key={idx} className="bg-slate-50 p-3 rounded-xl text-sm text-slate-700 border border-slate-100 flex items-center gap-3">
+                    <li
+                      key={idx}
+                      className="bg-slate-50 p-3 rounded-xl text-sm text-slate-700 border border-slate-100 flex items-center gap-3 animate-in zoom-in-95 fade-in duration-300"
+                      style={{ animationDelay: `${(idx + 1) * 75}ms`, animationFillMode: 'both' }}
+                    >
                       <div className="w-1.5 h-1.5 bg-slate-300 rounded-full"></div> {item}
                     </li>
                   ))}
@@ -713,7 +786,11 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 </h4>
                 <div className="space-y-4">
                   {selectedRemedy.steps.map((step, idx) => (
-                    <div key={idx} className="flex gap-4">
+                    <div
+                      key={idx}
+                      className="flex gap-4 animate-in zoom-in-95 fade-in duration-300"
+                      style={{ animationDelay: `${(idx + selectedRemedy.ingredients.length + 1) * 75}ms`, animationFillMode: 'both' }}
+                    >
                       <span className="flex-shrink-0 w-6 h-6 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">
                         {idx + 1}
                       </span>
@@ -723,15 +800,61 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 </div>
               </div>
 
-              <div className="pt-8 border-t border-slate-100">
+              <div
+                className="pt-8 border-t border-slate-100 pb-8 animate-in zoom-in-95 fade-in duration-300"
+                style={{ animationDelay: `${(selectedRemedy.ingredients.length + selectedRemedy.steps.length + 1) * 75}ms`, animationFillMode: 'both' }}
+              >
                 <p className="text-center text-xs text-slate-400 mb-4 font-bold uppercase tracking-widest">Was this helpful?</p>
-                <div className="flex justify-center gap-4">
-                  <button className="flex items-center gap-2 px-6 py-2 bg-slate-100 rounded-full text-sm font-bold text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition">
-                    <ThumbsUp size={16} /> Yes
-                  </button>
-                  <button className="flex items-center gap-2 px-6 py-2 bg-slate-100 rounded-full text-sm font-bold text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition">
-                    <Star size={16} /> Rate
-                  </button>
+                <div className="flex flex-col items-center gap-4">
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={() => handleLikeRemedy(selectedRemedy.id)}
+                      className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold transition-all duration-300 ${likedRemedies[selectedRemedy.id]
+                        ? 'bg-emerald-100 text-emerald-700 scale-105'
+                        : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 active:scale-95'
+                        }`}
+                    >
+                      <ThumbsUp size={16} className={likedRemedies[selectedRemedy.id] ? "fill-emerald-700 animate-bounce" : ""} />
+                      {likedRemedies[selectedRemedy.id] ? 'Liked!' : 'Yes'}
+                      <span className="ml-1 text-xs opacity-80">
+                        ({remedyLikeCounts[selectedRemedy.id] !== undefined ? remedyLikeCounts[selectedRemedy.id] : getInitialLikes(selectedRemedy.id)})
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setRatingInputFor(ratingInputFor === selectedRemedy.id ? null : selectedRemedy.id)}
+                      className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-bold transition-all duration-300 ${ratedRemedies[selectedRemedy.id]
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-700 active:scale-95'
+                        }`}
+                    >
+                      <Star size={16} className={ratedRemedies[selectedRemedy.id] ? "fill-amber-500" : ""} />
+                      {ratedRemedies[selectedRemedy.id] ? `Rated ${ratedRemedies[selectedRemedy.id]}` : 'Rate'}
+                    </button>
+                  </div>
+
+                  {/* Rating Input Area */}
+                  {ratingInputFor === selectedRemedy.id && !ratedRemedies[selectedRemedy.id] && (
+                    <div className="flex flex-col items-center gap-3 p-4 bg-white rounded-2xl shadow-lg border border-slate-100 animate-in slide-in-from-bottom-2 fade-in duration-300 w-full max-w-[240px]">
+                      <p className="text-sm font-bold text-slate-700">How would you rate this?</p>
+                      <div className="flex gap-2" onMouseLeave={() => setHoverRating(null)}>
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            key={star}
+                            onClick={() => handleSubmitRating(selectedRemedy.id, star)}
+                            onMouseEnter={() => setHoverRating(star)}
+                            className={`transition-all duration-200 focus:outline-none ${star <= (hoverRating || 0) ? 'text-amber-400 scale-125' : 'text-slate-300 hover:text-amber-400 border-none'}`}
+                          >
+                            <Star size={28} className={star <= (hoverRating || 0) ? "fill-amber-400" : ""} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {ratedRemedies[selectedRemedy.id] && ratingInputFor === selectedRemedy.id && (
+                    <div className="text-sm font-bold text-emerald-600 flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                      <CheckCircle size={16} className="text-emerald-500" /> Thank you for rating!
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -743,11 +866,11 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const renderWellnessHub = () => (
     <div className="flex flex-col h-full bg-slate-50">
-      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3">
+      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
         <button onClick={() => setCurrentView('HOME')}><ArrowLeft size={24} className="text-slate-500" /></button>
         <h2 className="font-bold text-slate-800">Yoga & Strength</h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
         <div className="bg-emerald-600 rounded-2xl p-5 text-white shadow-lg shadow-emerald-200 relative overflow-hidden">
           <div className="relative z-10">
             <h3 className="font-bold text-lg mb-1">Morning Routine</h3>
@@ -764,11 +887,12 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           ))}
         </div>
 
-        {MOCK_WELLNESS_ACTIVITIES.map(activity => (
+        {MOCK_WELLNESS_ACTIVITIES.map((activity, index) => (
           <div
             key={activity.id}
             onClick={() => setSelectedActivity(activity)}
-            className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-400 cursor-pointer transition flex items-center gap-4"
+            className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-400 cursor-pointer transition flex items-center gap-4 animate-in zoom-in-95 fade-in duration-300"
+            style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
           >
             <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-emerald-600 flex-shrink-0">
               {activity.type === 'BREATHING' ? <Volume2 className="rotate-90" /> : <Zap />}
@@ -786,12 +910,12 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
       {selectedActivity && (
         <div className="absolute inset-0 bg-white z-[60] flex flex-col animate-in slide-in-from-right duration-300">
-          <div className="p-4 border-b flex items-center justify-between">
+          <div className="p-4 border-b flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
             <button onClick={() => setSelectedActivity(null)}><ArrowLeft size={24} className="text-slate-500" /></button>
             <h2 className="font-bold text-slate-800">Activity Guide</h2>
             <div className="w-6"></div>
           </div>
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
             <div className="bg-emerald-50 rounded-3xl p-6 text-center mb-8">
               <Zap className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-slate-800 mb-1">{selectedActivity.title}</h3>
@@ -808,7 +932,11 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
               </h4>
               <div className="space-y-8">
                 {selectedActivity.steps.map((step, idx) => (
-                  <div key={idx} className="flex gap-4 relative">
+                  <div
+                    key={idx}
+                    className="flex gap-4 relative animate-in zoom-in-95 fade-in duration-300"
+                    style={{ animationDelay: `${idx * 75}ms`, animationFillMode: 'both' }}
+                  >
                     {idx < selectedActivity.steps.length - 1 && (
                       <div className="absolute top-8 left-3.5 w-0.5 h-full bg-slate-100"></div>
                     )}
@@ -820,7 +948,10 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 ))}
               </div>
 
-              <div className="pt-10">
+              <div
+                className="pt-10 animate-in zoom-in-95 fade-in duration-300"
+                style={{ animationDelay: `${selectedActivity.steps.length * 75}ms`, animationFillMode: 'both' }}
+              >
                 {!isTimerActive ? (
                   <button
                     onClick={startTimer}
@@ -851,20 +982,220 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
     </div>
   );
 
+  // --- REACTION & COMMENTS HANDLERS ---
+  const handleReaction = (tipId: string, emoji: string) => {
+    setTipReactions(prev => ({ ...prev, [tipId]: emoji }));
+    setActiveReactionDrawer(null);
+  };
+
+  const handleAddComment = (tipId: string) => {
+    if (!commentInput.trim()) return;
+    const newComment = {
+      id: Math.random().toString(36).substring(7),
+      text: commentInput.trim(),
+      author: user.name,
+      time: 'Just now'
+    };
+    setTipComments(prev => ({
+      ...prev,
+      [tipId]: [...(prev[tipId] || []), newComment]
+    }));
+    setCommentInput('');
+  };
+
+  const renderCommentsSheet = () => {
+    if (!activeTipComments) return null;
+    const tip = MOCK_HEALTH_TIPS.find(t => t.id === activeTipComments);
+    if (!tip) return null;
+    const comments = tipComments[activeTipComments] || [];
+
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="absolute inset-0" onClick={() => setActiveTipComments(null)} />
+        <div className="bg-white w-full max-h-[85vh] rounded-t-3xl shadow-2xl relative flex flex-col animate-in slide-in-from-bottom-full duration-300">
+          <div className="flex justify-center p-3 border-b border-slate-100 shrink-0">
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
+          </div>
+          <div className="p-4 border-b border-slate-100 shrink-0 flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 text-lg">Comments</h3>
+            <button onClick={() => setActiveTipComments(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition">
+              <span className="sr-only">Close</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="flex items-start gap-3 pb-4 border-b border-slate-50">
+              <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
+                {tip.doctorName.charAt(4)}
+              </div>
+              <div>
+                <span className="font-bold text-sm text-slate-800 mr-2">{tip.doctorName}</span>
+                <p className="text-sm text-slate-700 leading-relaxed mt-0.5">{tip.content}</p>
+                <span className="text-[10px] text-slate-400 mt-1 block">{new Date(tip.timestamp).toLocaleDateString()}</span>
+              </div>
+            </div>
+
+            {comments.length === 0 ? (
+              <div className="text-center py-10">
+                <MessageSquare className="mx-auto text-slate-200 mb-2 w-10 h-10" />
+                <p className="text-slate-500 font-medium text-sm">No comments yet.</p>
+                <p className="text-slate-400 text-xs">Be the first to share your thoughts!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((c, i) => (
+                  <div key={c.id} className="flex gap-3 group animate-in slide-in-from-right-4 fade-in duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
+                      {c.author.charAt(0)}
+                    </div>
+                    <div className="flex-1 bg-slate-50 p-3 rounded-2xl rounded-tl-none border border-slate-100">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <span className="font-bold text-xs text-slate-800">{c.author}</span>
+                        <span className="text-[9px] text-slate-400">{c.time}</span>
+                      </div>
+                      <p className="text-sm text-slate-700">{c.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="p-3 border-t border-slate-100 bg-white shrink-0 mt-auto pb-safe flex flex-col gap-2">
+            {/* Quick Emoji Bar for Comments */}
+            {!showCommentEmojiPicker && (
+              <div className="flex items-center gap-4 px-2 overflow-x-auto no-scrollbar justify-between">
+                {['❤️', '🙌', '🔥', '👏', '😢', '😍', '😮', '😂'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCommentInput(prev => prev + emoji);
+                    }}
+                    className="text-2xl hover:scale-125 transition-transform duration-200"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Full Emoji List for Comments */}
+            {showCommentEmojiPicker && (
+              <div className="grid grid-cols-8 gap-3 p-3 max-h-48 overflow-y-auto mb-1 bg-slate-50 rounded-xl border border-slate-200 shadow-sm animate-in zoom-in-95 duration-200 no-scrollbar">
+                {FULL_EMOJI_LIST.map((emoji, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCommentInput(prev => prev + emoji);
+                    }}
+                    className="text-2xl hover:scale-125 transition-transform duration-200"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-end gap-2 bg-slate-50 border border-slate-200 rounded-3xl p-1 pr-1.5 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0 m-1">
+                {user.name.charAt(0)}
+              </div>
+              <textarea
+                value={commentInput}
+                onChange={e => setCommentInput(e.target.value)}
+                placeholder="Add a comment..."
+                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm py-2.5 max-h-24 min-h-[40px] resize-none"
+                rows={1}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddComment(tip.id);
+                  }
+                }}
+              />
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowCommentEmojiPicker(!showCommentEmojiPicker);
+                }}
+                className={`p-2 rounded-full mb-0.5 transition-colors ${showCommentEmojiPicker ? 'bg-slate-200 text-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
+                type="button"
+              >
+                <Smile size={18} />
+              </button>
+              <button
+                onClick={() => handleAddComment(tip.id)}
+                disabled={!commentInput.trim()}
+                className={`p-2 rounded-full mb-0.5 transition-colors ${commentInput.trim() ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+              >
+                <Send size={15} className={commentInput.trim() ? '-ml-0.5' : ''} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  const renderExpandedEmojiSheet = () => {
+    if (!activeExpandedEmojiPicker) return null;
+
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="absolute inset-0" onClick={() => setActiveExpandedEmojiPicker(null)} />
+        <div className="bg-slate-900 w-full max-h-[85vh] rounded-t-3xl shadow-2xl relative flex flex-col animate-in slide-in-from-bottom-full duration-300">
+          <div className="flex justify-center p-3 shrink-0">
+            <div className="w-12 h-1.5 bg-slate-600 rounded-full" />
+          </div>
+          <div className="px-4 pb-3 shrink-0">
+            <div className="bg-slate-800 rounded-full py-2 px-4 flex items-center justify-center relative">
+              <span className="text-white text-lg">😀</span>
+            </div>
+            <h3 className="font-bold text-slate-100 mt-4 px-1 text-sm">Frequently used</h3>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 pb-8">
+            <div className="grid grid-cols-9 gap-y-6 gap-x-2 justify-items-center">
+              {FULL_EMOJI_LIST.map((emoji, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReaction(activeExpandedEmojiPicker, emoji);
+                    setActiveExpandedEmojiPicker(null);
+                  }}
+                  className="text-[26px] hover:scale-125 transition-transform duration-200"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDoctorTips = () => (
     <div className="flex flex-col h-full bg-slate-50">
-      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3">
+      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
         <button onClick={() => setCurrentView('HOME')}><ArrowLeft size={24} className="text-slate-500" /></button>
         <h2 className="font-bold text-slate-800">Doctor's Health Tips</h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
         <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex items-start gap-4 mb-2">
           <Info className="text-blue-500 flex-shrink-0 mt-0.5" size={18} />
           <p className="text-xs text-blue-700 font-medium leading-relaxed">Trusted advice from our rural healthcare network. Tips are updated daily based on local health conditions.</p>
         </div>
 
-        {MOCK_HEALTH_TIPS.map(tip => (
-          <div key={tip.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group">
+        {MOCK_HEALTH_TIPS.map((tip, index) => (
+          <div
+            key={tip.id}
+            className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group animate-in zoom-in-95 fade-in duration-300"
+            style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold border-2 border-slate-50 group-hover:border-blue-200 transition">
                 {tip.doctorName.charAt(4)}
@@ -877,23 +1208,110 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             </div>
             <h5 className="font-bold text-slate-800 mb-2">{tip.title}</h5>
             <p className="text-sm text-slate-600 leading-relaxed mb-4">{tip.content}</p>
-            <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-              <button className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-emerald-600 transition">
-                <Heart size={14} className="hover:fill-current" /> {tip.likes} found this helpful
-              </button>
-              <button className="text-xs font-bold text-slate-400 hover:text-blue-600 transition flex items-center gap-1">
-                Reply <Send size={12} />
+            <div className="flex items-center justify-between pt-4 border-t border-slate-50 relative">
+
+              {/* ANIMAITED REACTION BUTTON */}
+              <div
+                className="relative flex items-center"
+                onMouseEnter={() => setActiveReactionDrawer(tip.id)}
+                onMouseLeave={() => {
+                  // Wait a short bit before closing to allow smooth movement
+                  setTimeout(() => {
+                    setActiveReactionDrawer(prev => prev === tip.id ? null : prev);
+                  }, 150);
+                }}
+              >
+                {activeReactionDrawer === tip.id && (
+                  <div
+                    className="absolute bottom-[calc(100%+8px)] left-0 bg-slate-800 border border-slate-700 shadow-xl rounded-full px-3 py-2 flex items-center gap-2 animate-in zoom-in-95 duration-200 origin-bottom-left z-20"
+                    // Prevent closing when moving over the popover itself
+                    onMouseEnter={() => setActiveReactionDrawer(tip.id)}
+                  >
+                    {['👍🏼', '❤️', '😄', '😲', '😟', '🙏🏼', '💯', '🙌🏼'].map((emoji, i) => (
+                      <button
+                        key={emoji}
+                        onClick={(e) => { e.stopPropagation(); handleReaction(tip.id, emoji); }}
+                        className="text-[28px] hover:scale-125 transition-transform duration-200 animate-in slide-in-from-bottom-2 fade-in leading-none"
+                        style={{ animationDelay: `${i * 30}ms`, animationFillMode: 'both' }}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+
+                    <div className="w-4 h-4 bg-slate-800 absolute -bottom-1.5 left-6 rotate-45 rounded-sm" />
+                    {/* Invisible bridge to prevent hover loss when moving mouse up */}
+                    <div className="absolute -bottom-3 left-0 right-0 h-4 bg-transparent" />
+                  </div>
+                )}
+                <button
+                  className={`flex items-center gap-1.5 text-xs font-bold transition relative group py-1 ${tipReactions[tip.id] ? 'text-slate-700' : 'text-slate-500 hover:text-slate-700'}`}
+                  onClick={() => {
+                    // Specific logic for mobile taps: if no reaction and drawer closed, open drawer
+                    // Otherwise, toggle the heart reaction (we'll just use the first default if not set, or clear if set)
+                    if (!tipReactions[tip.id] && activeReactionDrawer !== tip.id) {
+                      setActiveReactionDrawer(tip.id);
+                    } else {
+                      handleReaction(tip.id, tipReactions[tip.id] ? '' : '👍🏼');
+                    }
+                  }}
+                >
+                  {(() => {
+                    const emojis = ['👍🏼', '❤️', '😄', '😲', '😟', '🙏🏼', '💯', '🙌🏼'];
+                    const seed1 = tip.id.charCodeAt(0) || 0;
+                    const seed2 = tip.id.charCodeAt(tip.id.length - 1) || 0;
+
+                    const top1 = emojis[seed1 % emojis.length];
+                    const top2 = emojis[(seed2 + 1) % emojis.length];
+                    const top3 = emojis[(seed1 + seed2 + 2) % emojis.length];
+
+                    const topSet = new Set([top1, top2, top3]);
+                    const totalCount = tip.likes + (tipReactions[tip.id] ? 1 : 0);
+                    const displayCount = Math.min(totalCount, 3);
+
+                    let topArr = Array.from(topSet).slice(0, displayCount);
+
+                    if (tipReactions[tip.id]) {
+                      topArr = [tipReactions[tip.id], ...topArr.filter(e => e !== tipReactions[tip.id])].slice(0, displayCount);
+                    }
+
+                    const remaining = Math.max(0, totalCount - topArr.length);
+
+                    if (totalCount === 0) {
+                      return <Heart size={16} className="text-slate-400 group-hover:fill-rose-100 group-hover:text-rose-500 transition-colors" />;
+                    }
+
+                    return (
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex -space-x-1">
+                          {topArr.map((emoji, idx) => (
+                            <span key={idx} className="text-base relative z-10 bg-slate-50 rounded-full ring-2 ring-slate-50">{emoji}</span>
+                          ))}
+                        </div>
+                        {remaining > 0 && <span className="text-slate-500">+{remaining}</span>}
+                      </div>
+                    );
+                  })()}
+                </button>
+              </div>
+
+              {/* COMMENT BUTTON */}
+              <button
+                onClick={() => setActiveTipComments(tip.id)}
+                className="text-xs font-bold text-slate-500 hover:text-blue-600 transition flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-full"
+              >
+                <MessageSquare size={14} /> Comment {(tipComments[tip.id] && tipComments[tip.id].length > 0) ? `(${tipComments[tip.id].length})` : ''}
               </button>
             </div>
           </div>
         ))}
       </div>
+      {renderCommentsSheet()}
     </div>
   );
 
   const renderConsultation = () => (
     <div className="flex flex-col h-full bg-slate-50">
-      <div className="bg-white border-b border-slate-200 p-3 flex items-center justify-between shrink-0">
+      <div className="bg-white border-b border-slate-200 p-3 flex items-center justify-between shrink-0 animate-in fade-in slide-in-from-top-4 duration-500">
         <button onClick={() => setCurrentView('HOME')} className="text-slate-500 hover:text-slate-800">
           <ArrowLeft size={20} />
         </button>
@@ -915,7 +1333,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm whitespace-pre-line ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-br-none' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
@@ -938,7 +1356,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-3 bg-white border-t border-slate-200 shrink-0">
+      <div className="p-3 bg-white border-t border-slate-200 shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {currentView === 'CONSULT_VOICE' ? (
           <div className="flex flex-col items-center gap-4 py-4">
             <button
@@ -1004,7 +1422,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
     const isSerious = triageResult.severity === CaseSeverity.MODERATE || triageResult.severity === CaseSeverity.CRITICAL;
 
     return (
-      <div className="flex flex-col h-full bg-slate-50 overflow-y-auto">
+      <div className="flex flex-col h-full bg-slate-50 overflow-y-auto animate-in slide-in-from-bottom-8 duration-700">
         <div className="p-6">
           <div className={`p-6 rounded-2xl shadow-sm border mb-6 text-center ${isSerious ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'
             }`}>
@@ -1090,7 +1508,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const renderLocateNearby = () => (
     <div className="flex flex-col h-full bg-slate-50">
-      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3">
+      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
         <button onClick={() => setCurrentView('HOME')}><ArrowLeft size={24} className="text-slate-500" /></button>
         <h2 className="font-bold text-slate-800">Nearby Healthcare</h2>
       </div>
@@ -1099,7 +1517,10 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         <div ref={mapContainerRef} className="absolute inset-0 z-0"></div>
 
         <div className="z-10 p-4 h-full flex flex-col pointer-events-none">
-          <div className="bg-white p-2 rounded-xl shadow-lg flex items-center gap-2 pointer-events-auto mb-auto">
+          <div
+            className="bg-white p-2 rounded-xl shadow-lg flex items-center gap-2 pointer-events-auto mb-auto animate-in zoom-in-95 fade-in duration-500"
+            style={{ animationDelay: '300ms', animationFillMode: 'both' }}
+          >
             <button
               onClick={detectLocation}
               disabled={locationLoading}
@@ -1118,13 +1539,20 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           </div>
 
           {nearbyHospitals.length > 0 && (
-            <div className="bg-white rounded-t-2xl shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)] max-h-[60%] overflow-y-auto pointer-events-auto -mx-4">
+            <div
+              className="bg-white rounded-t-2xl shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)] max-h-[60%] overflow-y-auto pointer-events-auto -mx-4 animate-in slide-in-from-bottom-8 fade-in duration-700"
+              style={{ animationDelay: '500ms', animationFillMode: 'both' }}
+            >
               <div className="p-4 border-b border-slate-100 sticky top-0 bg-white">
                 <h3 className="font-bold text-slate-800">{nearbyHospitals.length} Centers Found</h3>
               </div>
               <div className="p-2 space-y-2">
-                {nearbyHospitals.map(hospital => (
-                  <div key={hospital.id} className="p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition flex justify-between items-center">
+                {nearbyHospitals.map((hospital, index) => (
+                  <div
+                    key={hospital.id}
+                    className="p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition flex justify-between items-center animate-in zoom-in-95 fade-in duration-300"
+                    style={{ animationDelay: `${600 + index * 75}ms`, animationFillMode: 'both' }}
+                  >
                     <div>
                       <h4 className="font-semibold text-slate-800 text-sm">{hospital.name}</h4>
                       <p className="text-xs text-slate-500 mb-1">{hospital.address}</p>
@@ -1150,7 +1578,10 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             </div>
           )}
           {userLocation && nearbyHospitals.length === 0 && !locationLoading && (
-            <div className="mt-auto bg-white p-6 rounded-t-2xl shadow-lg pointer-events-auto -mx-4 text-center">
+            <div
+              className="mt-auto bg-white p-6 rounded-t-2xl shadow-lg pointer-events-auto -mx-4 text-center animate-in slide-in-from-bottom-8 fade-in duration-500"
+              style={{ animationDelay: '500ms', animationFillMode: 'both' }}
+            >
               <MapPin className="mx-auto text-slate-300 mb-2" size={32} />
               <p className="text-sm font-bold text-slate-800">No facilities found within 10km.</p>
               <p className="text-xs text-slate-500">Try zooming out or moving to a different area.</p>
@@ -1163,19 +1594,19 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const renderBooking = () => (
     <div className="flex flex-col h-full bg-slate-50">
-      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3">
+      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
         <button onClick={() => setCurrentView('HOME')}><ArrowLeft size={24} className="text-slate-500" /></button>
         <h2 className="font-bold text-slate-800">Book Appointment</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="mb-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex-1 overflow-y-auto p-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="mb-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '75ms', animationFillMode: 'both' }}>
           <h3 className="text-sm font-bold text-slate-500 uppercase mb-2">Hospital / Clinic</h3>
           <p className="text-lg font-bold text-slate-800">{selectedHospital ? selectedHospital.name : 'Online Consultation'}</p>
           <p className="text-sm text-slate-500">{selectedHospital ? selectedHospital.address : 'Video Call'}</p>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
           <label className="block text-sm font-semibold text-slate-700 mb-2">Select Doctor</label>
           <select
             value={apptDoctor}
@@ -1187,7 +1618,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             <option>Dr. R. Singh (Pediatrician)</option>
           </select>
         </div>
-        <div className="mb-6">
+        <div className="mb-6 animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '225ms', animationFillMode: 'both' }}>
           <label className="block text-sm font-semibold text-slate-700 mb-2">Select Date</label>
           <input
             type="date"
@@ -1197,7 +1628,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           />
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
           <label className="block text-sm font-semibold text-slate-700 mb-3">Payment Method</label>
           <div className="space-y-3">
             <button
@@ -1248,26 +1679,28 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-4 px-2">
-          <span className="text-sm font-medium text-slate-600">Total Fee</span>
-          <span className="text-xl font-bold text-slate-900">₹{selectedHospital?.consultationFee || 200}</span>
-        </div>
+        <div className="flex flex-col animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '375ms', animationFillMode: 'both' }}>
+          <div className="flex items-center justify-between mb-4 px-2">
+            <span className="text-sm font-medium text-slate-600">Total Fee</span>
+            <span className="text-xl font-bold text-slate-900">₹{selectedHospital?.consultationFee || 200}</span>
+          </div>
 
-        <button
-          onClick={handleBookingSubmit}
-          disabled={!apptDate || isPaymentProcessing}
-          className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {isPaymentProcessing ? (
-            <>
-              <Loader2 className="animate-spin" /> Processing...
-            </>
-          ) : (
-            <>
-              {paymentMethod === 'CASH' ? 'Confirm Booking' : `Pay ₹${selectedHospital?.consultationFee || 200} & Book`}
-            </>
-          )}
-        </button>
+          <button
+            onClick={handleBookingSubmit}
+            disabled={!apptDate || isPaymentProcessing}
+            className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isPaymentProcessing ? (
+              <>
+                <Loader2 className="animate-spin" /> Processing...
+              </>
+            ) : (
+              <>
+                {paymentMethod === 'CASH' ? 'Confirm Booking' : `Pay ₹${selectedHospital?.consultationFee || 200} & Book`}
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1347,14 +1780,15 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           Your interaction has been saved. Help us improve by rating your experience.
         </p>
 
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="flex justify-center gap-2 mb-6" onMouseLeave={() => setHoverRating(null)}>
           {[1, 2, 3, 4, 5].map((star) => (
             <button
               key={star}
               onClick={() => setFeedbackRating(star)}
-              className={`p-1 transition-all hover:scale-110 ${feedbackRating >= star ? 'text-amber-400 fill-current' : 'text-slate-300'}`}
+              onMouseEnter={() => setHoverRating(star)}
+              className={`p-1 transition-all hover:scale-110 ${feedbackRating >= star || (hoverRating !== null && hoverRating >= star) ? 'text-amber-400 fill-current' : 'text-slate-300'}`}
             >
-              <Star size={32} fill={feedbackRating >= star ? "currentColor" : "none"} />
+              <Star size={32} fill={feedbackRating >= star || (hoverRating !== null && hoverRating >= star) ? "currentColor" : "none"} />
             </button>
           ))}
         </div>

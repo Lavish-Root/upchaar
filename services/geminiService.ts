@@ -8,7 +8,7 @@ export interface TriageResult {
   suggestedPrescription: string;
   summary: string;
   homeRemedies: string[];
-  careSuggestions: string; 
+  careSuggestions: string;
 }
 
 const sanitizeJsonResponse = (text: string): string => {
@@ -22,7 +22,7 @@ const sanitizeJsonResponse = (text: string): string => {
   const endArrIdx = cleaned.lastIndexOf(']');
 
   if (startArrIdx !== -1 && (startIdx === -1 || startArrIdx < startIdx)) {
-      return cleaned.substring(startArrIdx, endArrIdx + 1).trim();
+    return cleaned.substring(startArrIdx, endArrIdx + 1).trim();
   }
   if (startIdx !== -1 && endIdx !== -1) {
     cleaned = cleaned.substring(startIdx, endIdx + 1);
@@ -40,7 +40,7 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 5, delay = 4000): Pr
     const errorStr = (error?.message || '') + JSON.stringify(error || '').toLowerCase();
     const isQuotaError = errorStr.includes('429') || errorStr.includes('quota') || errorStr.includes('exhausted') || errorStr.includes('resource');
     const isServiceError = errorStr.includes('503') || errorStr.includes('overloaded') || errorStr.includes('unavailable') || errorStr.includes('deadline');
-    
+
     if (retries > 0 && (isQuotaError || isServiceError)) {
       const jitter = Math.random() * 1000;
       const finalDelay = delay + jitter;
@@ -83,9 +83,9 @@ PROFESSIONALISM:
 `;
 
 export const startNewChat = () => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   return ai.chats.create({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-1.5-flash',
     config: {
       temperature: 0.1,
       systemInstruction: DOCTOR_SYSTEM_INSTRUCTION,
@@ -99,7 +99,7 @@ export const getCallingAIResponse = async (
   currentState: string
 ) => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     const prompt = `
       Act as AI Upchaar Medical Controller.
       CURRENT STATE: ${currentState}
@@ -109,10 +109,10 @@ export const getCallingAIResponse = async (
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: prompt,
-      config: { 
-        temperature: 0.1, 
+      config: {
+        temperature: 0.1,
         responseMimeType: 'application/json',
         systemInstruction: DOCTOR_SYSTEM_INSTRUCTION
       }
@@ -123,12 +123,12 @@ export const getCallingAIResponse = async (
 
 export const getOTPAIResponse = async () => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const prompt = `You are a secure OTP Generator. Speak code clearly in patient language. Code: ${otp}`;
 
     await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: { temperature: 0.1 }
     });
@@ -138,10 +138,10 @@ export const getOTPAIResponse = async () => {
 
 export const analyzeCase = async (transcript: string): Promise<TriageResult> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     const prompt = `Perform medical triage on this transcript. Return strict JSON. TRANSCRIPT: ${transcript}`;
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: { temperature: 0.1, responseMimeType: 'application/json' }
     });
@@ -151,14 +151,14 @@ export const analyzeCase = async (transcript: string): Promise<TriageResult> => 
 
 export const getRealNearbyHospitals = async (lat: number, lng: number): Promise<Hospital[]> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     const prompt = `Identify exactly 5 real, currently operational hospitals or clinics within a 10km radius of Latitude ${lat}, Longitude ${lng} in India. Search for their names, addresses, exact coordinates, and typical consultation fees in INR. Return a JSON array.`;
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash',
       contents: prompt,
-      config: { 
-        temperature: 0.1, 
-        tools: [{googleSearch: {}}],
+      config: {
+        temperature: 0.1,
+        tools: [{ googleSearch: {} }],
         responseMimeType: 'application/json',
         responseSchema: {
           type: Type.ARRAY,
@@ -184,24 +184,24 @@ export const getRealNearbyHospitals = async (lat: number, lng: number): Promise<
 };
 
 export const generateHealthRisks = async (patients: PatientProfile[]): Promise<RiskPrediction[]> => {
-    return withRetry(async () => {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        const prompt = `Predict risks for patients: ${JSON.stringify(patients)}. JSON format.`;
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
-            contents: prompt,
-            config: { temperature: 0.1, responseMimeType: 'application/json' }
-        });
-        return JSON.parse(sanitizeJsonResponse(response.text));
+  return withRetry(async () => {
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+    const prompt = `Predict risks for patients: ${JSON.stringify(patients)}. JSON format.`;
+    const response = await ai.models.generateContent({
+      model: 'gemini-1.5-pro',
+      contents: prompt,
+      config: { temperature: 0.1, responseMimeType: 'application/json' }
     });
+    return JSON.parse(sanitizeJsonResponse(response.text));
+  });
 };
 
 export const trainAiModel = async (cumulativeDataset: any[], config: any): Promise<ModelHistoryEntry> => {
   return withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
     const prompt = `Train model v${config.version}. JSON result.`;
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: 'gemini-1.5-pro',
       contents: prompt,
       config: { temperature: 0.1, responseMimeType: 'application/json' }
     });

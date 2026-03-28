@@ -227,7 +227,7 @@ const PredictiveAlerts: React.FC<PredictiveAlertsProps> = ({ patients }) => {
                         <div className="w-full max-w-sm bg-white/10 h-1 rounded-full mt-8 overflow-hidden">
                             <div className="bg-purple-500 h-full transition-all duration-700" style={{ width: `${trainingProgress}%` }}></div>
                         </div>
-                        <div className="mt-6 flex gap-12 text-center">
+                        <div className="mt-6 flex flex-wrap justify-center gap-6 sm:gap-12 text-center">
                             <div><p className="text-[10px] text-slate-500 uppercase">Total Samples</p><p className="text-sm font-mono text-white">{modelState.cumulativeDataset.length}</p></div>
                             <div><p className="text-[10px] text-slate-500 uppercase">Val Loss</p><p className="text-sm font-mono text-white">{(0.8 - trainingProgress / 150).toFixed(4)}</p></div>
                             <div><p className="text-[10px] text-slate-500 uppercase">State</p><p className="text-sm font-mono text-white">Learning...</p></div>

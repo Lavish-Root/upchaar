@@ -421,12 +421,12 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                     <HeaderAvatar />
                 </div>
 
-                <div className="bg-white border-b border-slate-100 flex items-center px-6 gap-8">
+                <div className="bg-white border-b border-slate-100 flex items-center px-4 sm:px-6 gap-4 sm:gap-8 overflow-x-auto whitespace-nowrap scrollbar-hide">
                     {['REMEDIES', 'TIPS', 'ACTIVITIES'].map((t: any) => (
                         <button
                             key={t}
                             onClick={() => setWellnessTab(t)}
-                            className={`py-4 text-sm font-bold border-b-2 transition ${wellnessTab === t ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                            className={`py-4 text-sm font-bold border-b-2 transition shrink-0 ${wellnessTab === t ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
                         >
                             {t === 'ACTIVITIES' ? 'Yoga & Exercises' : t === 'TIPS' ? 'Health Tips' : 'Seasonal Remedies'}
                         </button>
@@ -434,12 +434,12 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <div>
                             <h3 className="font-bold text-slate-800 text-lg">Preventive Care Management</h3>
                             <p className="text-xs text-slate-500">Authoritative content for patient education and health prevention.</p>
                         </div>
-                        <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition">
+                        <button onClick={() => setShowAddModal(true)} className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition w-full sm:w-auto shrink-0">
                             <Plus size={16} /> Create New
                         </button>
                     </div>
@@ -506,7 +506,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                         <div className="p-8 overflow-y-auto space-y-6 max-h-[80vh]">
                             {wellnessTab === 'REMEDIES' && (
                                 <>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div><label className="text-xs font-bold text-slate-400 uppercase">Season</label><select value={remedyForm.season} onChange={e => setRemedyForm({ ...remedyForm, season: e.target.value as any })} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm outline-none"><option value={Season.SUMMER}>Summer</option><option value={Season.WINTER}>Winter</option><option value={Season.MONSOON}>Monsoon</option><option value={Season.ALL}>All Seasons</option></select></div>
                                         <div><label className="text-xs font-bold text-slate-400 uppercase">Primary Ailment</label><select value={remedyForm.ailment} onChange={e => setRemedyForm({ ...remedyForm, ailment: e.target.value })} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm outline-none"><option>Cough & Cold</option><option>Indigestion</option><option>Dehydration</option><option>Fatigue</option><option>Muscle Pain</option></select></div>
                                     </div>
@@ -524,12 +524,12 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                             )}
                             {wellnessTab === 'ACTIVITIES' && (
                                 <>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div><label className="text-xs font-bold text-slate-400 uppercase">Type</label><select value={activityForm.type} onChange={e => setActivityForm({ ...activityForm, type: e.target.value as any })} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm outline-none"><option>YOGA</option><option>EXERCISE</option><option>BREATHING</option></select></div>
                                         <div><label className="text-xs font-bold text-slate-400 uppercase">Health Concern</label><select value={activityForm.concern} onChange={e => setActivityForm({ ...activityForm, concern: e.target.value as any })} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm outline-none"><option>IMMUNITY</option><option>STRESS</option><option>BACK_PAIN</option><option>WEAKNESS</option><option>ALL</option></select></div>
                                     </div>
                                     <div><label className="text-xs font-bold text-slate-400 uppercase">Activity Title</label><input value={activityForm.title} onChange={e => setActivityForm({ ...activityForm, title: e.target.value })} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm outline-none" placeholder="e.g. Surya Namaskar" /></div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div><label className="text-xs font-bold text-slate-400 uppercase">Duration</label><input value={activityForm.duration} onChange={e => setActivityForm({ ...activityForm, duration: e.target.value })} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm outline-none" placeholder="e.g. 10 mins" /></div>
                                         <div><label className="text-xs font-bold text-slate-400 uppercase">Difficulty Level</label><select value={activityForm.level} onChange={e => setActivityForm({ ...activityForm, level: e.target.value as any })} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mt-1 text-sm outline-none"><option>BEGINNER</option><option>INTERMEDIATE</option><option>ADVANCED</option></select></div>
                                     </div>
@@ -852,17 +852,17 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                             return (
                                 <div key={c.id} onClick={() => setSelectedCase(c)} className={`p-4 border-b border-slate-100 cursor-pointer transition-all duration-300 animate-in fade-in slide-in-from-right-4 hover:bg-slate-50 ${selectedCase?.id === c.id ? 'bg-emerald-50 border-emerald-200 shadow-inner' : ''}`} style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                                     <div className="flex justify-between items-start mb-1"><span className="font-bold text-slate-800">{c.patientName}</span><span className="text-xs font-medium text-slate-400">{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
-                                    <div className="flex items-center gap-2 text-[11px] text-slate-500 mb-2 font-mono bg-slate-50 inline-flex px-2 py-0.5 rounded border border-slate-100">
+                                    <div className="flex items-center flex-wrap gap-2 text-[11px] text-slate-500 mb-2 font-mono bg-slate-50 inline-flex px-2 py-0.5 rounded border border-slate-100">
                                         <span>{c.patientId}</span><span>•</span><span>{patient?.age || '?'} Yrs</span>
                                     </div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className={`text-[10px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest shadow-sm ${c.severity === 'CRITICAL' ? 'bg-red-500 text-white ring-2 ring-red-100' :
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest shadow-sm shrink-0 ${c.severity === 'CRITICAL' ? 'bg-red-500 text-white ring-2 ring-red-100' :
                                             c.severity === 'MODERATE' ? 'bg-amber-100 text-amber-800' :
                                                 c.severity === 'MILD' ? 'bg-emerald-100 text-emerald-800' :
                                                     'bg-slate-100 text-slate-600'
                                             }`}>{c.severity}</span>
-                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest border ${c.mode === 'IVR' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>{c.mode}</span>
-                                        {c.status === 'APPROVED' && <span className="text-[10px] text-emerald-600 font-bold ml-auto flex items-center gap-1"><CheckCircle size={10} />Sent</span>}
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest border shrink-0 ${c.mode === 'IVR' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>{c.mode}</span>
+                                        {c.status === 'APPROVED' && <span className="text-[10px] text-emerald-600 font-bold ml-auto flex items-center gap-1 shrink-0"><CheckCircle size={10} />Sent</span>}
                                     </div>
                                     <p className="text-xs text-slate-600 line-clamp-1 italic">{c.aiDiagnosis}</p>
                                 </div>
