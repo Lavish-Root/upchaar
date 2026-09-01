@@ -122,6 +122,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [facilityTypeFilter, setFacilityTypeFilter] = useState<'ALL' | 'HOSPITAL' | 'CLINIC' | 'PHARMACY' | 'PATHOLOGY_LAB' | 'AMBULANCE_HUB' | 'AYURVEDA'>('ALL');
   const [isVoiceSpeaking, setIsVoiceSpeaking] = useState(false);
+  const [speechInputLang, setSpeechInputLang] = useState('hi-IN');
 
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -302,16 +303,19 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         setIsListening(false);
       };
     }
-  }, [chatSession]);
+  }, [chatSession, speechInputLang]);
 
-  const startListening = () => {
+  const startListening = (customLang?: string) => {
     if (recognitionRef.current) {
+      try {
+        recognitionRef.current.lang = customLang || speechInputLang;
+      } catch (e) { }
       setIsListening(true);
       try {
         recognitionRef.current.start();
       } catch (e) { }
     } else {
-      alert("Voice input is not supported in this browser.");
+      alert("Voice input is not supported in this browser. Please type your message.");
     }
   };
 
@@ -1506,6 +1510,37 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       <div className="p-3 bg-white border-t border-slate-200 shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {currentView === 'CONSULT_VOICE' ? (
           <div className="flex flex-col items-center gap-3 py-3">
+            {/* MULTILINGUAL LANGUAGE SELECTION PILLS */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full px-1 pb-1">
+              {[
+                { code: 'hi-IN', label: '🇮🇳 हिन्दी (Hindi)' },
+                { code: 'en-IN', label: '🇬🇧 English' },
+                { code: 'pa-IN', label: '🇮🇳 ਪੰਜਾਬੀ (Punjabi)' },
+                { code: 'gu-IN', label: '🇮🇳 ગુજરાતી (Gujarati)' },
+                { code: 'mr-IN', label: '🇮🇳 मराठी (Marathi)' },
+                { code: 'bn-IN', label: '🇮🇳 বাংলা (Bengali)' },
+                { code: 'ta-IN', label: '🇮🇳 தமிழ் (Tamil)' },
+                { code: 'te-IN', label: '🇮🇳 తెలుగు (Telugu)' },
+              ].map(lang => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    setSpeechInputLang(lang.code);
+                    if (recognitionRef.current) {
+                      try { recognitionRef.current.lang = lang.code; } catch (e) {}
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition active:scale-95 ${
+                    speechInputLang === lang.code
+                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
+                  }`}
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+
             {/* LIVE VOICE EQUALIZER / SPEAKING STATUS */}
             {isVoiceSpeaking && (
               <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm animate-pulse">
@@ -1513,7 +1548,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 <span>AI Doctor Speaking (Human Neural Voice)...</span>
                 <button
                   onClick={() => stopRealisticVoice()}
-                  className="ml-2 text-red-600 hover:text-red-800 bg-white px-2 py-0.5 rounded-md text-[10px] border border-red-200"
+                  className="ml-2 text-red-600 hover:text-red-800 bg-white px-2 py-0.5 rounded-md text-[10px] border border-red-200 font-bold"
                 >
                   Stop
                 </button>
@@ -1522,7 +1557,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
             <div className="flex items-center gap-4">
               <button
-                onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
+                onClick={isListening ? () => recognitionRef.current?.stop() : () => startListening()}
                 disabled={isLoading}
                 className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
                   isListening
@@ -1538,12 +1573,12 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             
             <p className="text-xs text-slate-500 font-medium text-center">
               {isListening
-                ? '🎙️ Listening in Hindi, Punjabi & English...'
+                ? `🎙️ Listening in ${speechInputLang.split('-')[0].toUpperCase()}... (Speak freely)`
                 : isVoiceSpeaking
                 ? '🔊 Listening to AI Doctor voice...'
                 : isLoading
                 ? '⚡ Processing clinical advice...'
-                : 'Tap microphone to speak your symptoms'}
+                : 'Tap microphone to speak (Multi-lingual supported)'}
             </p>
           </div>
         ) : (

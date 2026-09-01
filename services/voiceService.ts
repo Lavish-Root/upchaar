@@ -1,14 +1,17 @@
 /**
  * Voice Service - Real Human-like Neural Voice AI Engine
  * Delivers natural, compassionate human-like speech for Rural Telemedicine & IVR.
- * Supports Hindi, Punjabi, Hinglish, and Indian English with high-definition audio streaming.
+ * Supports Hindi, Punjabi, Hinglish, English, Gujarati, Marathi, Bengali, Tamil, Telugu, Kannada, Malayalam.
+ * Multi-lingual per-sentence adaptation with zero repeat duplication.
  */
 
 let currentAudioElement: HTMLAudioElement | null = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
-let speechQueue: string[] = [];
 let isPlaying = false;
 let onStateChangeCallback: ((speaking: boolean) => void) | null = null;
+
+// Unique playback session token to prevent concurrent duplicate audio loops
+let activeSessionToken = 0;
 
 export const setVoiceStateListener = (callback: (speaking: boolean) => void) => {
   onStateChangeCallback = callback;
@@ -56,20 +59,27 @@ export const cleanTextForSpeech = (rawText: string): string => {
 };
 
 /**
- * Split long text into natural sentence chunks (under 180 chars) for seamless streaming
+ * Split long text into non-duplicate natural sentence chunks (under 180 chars)
  */
 const splitIntoSentences = (text: string): string[] => {
-  const sentences = text.match(/[^.!?।\n]+[.!?।\n]*/g) || [text];
+  const rawSentences = text.match(/[^.!?।\n]+[.!?।\n]*/g) || [text];
   const chunks: string[] = [];
+  const seenSentences = new Set<string>();
 
-  for (const s of sentences) {
+  for (const s of rawSentences) {
     const trimmed = s.trim();
     if (!trimmed) continue;
+
+    // Filter out accidental duplicate consecutive sentences
+    const normalized = trimmed.toLowerCase();
+    if (seenSentences.has(normalized)) {
+      continue;
+    }
+    seenSentences.add(normalized);
 
     if (trimmed.length <= 180) {
       chunks.push(trimmed);
     } else {
-      // Split by commas or pauses if sentence is too long
       const parts = trimmed.split(/[,،;]\s*/);
       let currentChunk = '';
       for (const p of parts) {
@@ -88,25 +98,35 @@ const splitIntoSentences = (text: string): string[] => {
 };
 
 /**
- * Detect language code for natural speech synthesis
+ * Detect language code with full pan-Indian multilingual recognition
  */
 export const detectSpeechLanguage = (text: string): { langCode: string; ttsLang: string } => {
+  // Unicode ranges for Indian scripts
   const isHindi = /[\u0900-\u097F]/.test(text);
   const isPunjabi = /[\u0A00-\u0A7F]/.test(text);
+  const isGujarati = /[\u0A80-\u0AFF]/.test(text);
+  const isBengali = /[\u0980-\u09FF]/.test(text);
+  const isTamil = /[\u0B80-\u0BFF]/.test(text);
+  const isTelugu = /[\u0C00-\u0C7F]/.test(text);
+  const isKannada = /[\u0C80-\u0CFF]/.test(text);
+  const isMalayalam = /[\u0D00-\u0D7F]/.test(text);
 
-  if (isPunjabi) {
-    return { langCode: 'pa-IN', ttsLang: 'pa' };
-  }
-  if (isHindi) {
-    return { langCode: 'hi-IN', ttsLang: 'hi' };
-  }
+  if (isPunjabi) return { langCode: 'pa-IN', ttsLang: 'pa' };
+  if (isGujarati) return { langCode: 'gu-IN', ttsLang: 'gu' };
+  if (isBengali) return { langCode: 'bn-IN', ttsLang: 'bn' };
+  if (isTamil) return { langCode: 'ta-IN', ttsLang: 'ta' };
+  if (isTelugu) return { langCode: 'te-IN', ttsLang: 'te' };
+  if (isKannada) return { langCode: 'kn-IN', ttsLang: 'kn' };
+  if (isMalayalam) return { langCode: 'ml-IN', ttsLang: 'ml' };
+  if (isHindi) return { langCode: 'hi-IN', ttsLang: 'hi' };
 
-  // Check for common Hinglish keywords (Namaste, bukhar, dard, takleef, etc.)
-  const isHinglish = /\b(namaste|bukhar|khansi|dard|dawa|upchaar|kripya|aapko|takleef|hai|haan|theek|bataiye|doctor)\b/i.test(text);
+  // Hinglish / Punjabi transliterated in Latin alphabet
+  const isHinglish = /\b(namaste|sat sri akal|bukhar|khansi|dard|dawa|upchaar|kripya|aapko|takleef|hai|haan|theek|bataiye|doctor|kem cho|kasa kay|vanakkam|elavunnaru)\b/i.test(text);
   if (isHinglish) {
     return { langCode: 'hi-IN', ttsLang: 'hi' };
   }
 
+  // English
   return { langCode: 'en-IN', ttsLang: 'en-IN' };
 };
 
@@ -114,6 +134,7 @@ export const detectSpeechLanguage = (text: string): { langCode: string; ttsLang:
  * Stop any ongoing speech playback
  */
 export const stopRealisticVoice = () => {
+  activeSessionToken++;
   if (currentAudioElement) {
     currentAudioElement.pause();
     currentAudioElement.currentTime = 0;
@@ -122,12 +143,11 @@ export const stopRealisticVoice = () => {
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
-  speechQueue = [];
   notifyState(false);
 };
 
 /**
- * Play text using High-Definition Human Cloud Audio with fallback to Web Speech Neural voice
+ * Play text using High-Definition Human Cloud Audio with per-sentence language adaptation and zero repeating
  */
 export const playRealisticVoice = async (text: string): Promise<void> => {
   const clean = cleanTextForSpeech(text);
@@ -136,7 +156,7 @@ export const playRealisticVoice = async (text: string): Promise<void> => {
   stopRealisticVoice();
   notifyState(true);
 
-  const { langCode, ttsLang } = detectSpeechLanguage(clean);
+  const sessionToken = ++activeSessionToken;
   const chunks = splitIntoSentences(clean);
 
   if (chunks.length === 0) {
@@ -144,40 +164,62 @@ export const playRealisticVoice = async (text: string): Promise<void> => {
     return;
   }
 
-  speechQueue = [...chunks];
+  let chunkIndex = 0;
 
   const playNextChunk = async () => {
-    if (speechQueue.length === 0) {
+    if (sessionToken !== activeSessionToken) {
+      return;
+    }
+
+    if (chunkIndex >= chunks.length) {
       notifyState(false);
       return;
     }
 
-    const currentText = speechQueue.shift()!;
+    const currentText = chunks[chunkIndex++];
+    const { langCode, ttsLang } = detectSpeechLanguage(currentText);
     const streamUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
       currentText
     )}&tl=${ttsLang}&client=tw-ob`;
+
+    let chunkHandled = false;
+
+    const handleChunkEnd = () => {
+      if (chunkHandled || sessionToken !== activeSessionToken) return;
+      chunkHandled = true;
+      playNextChunk();
+    };
+
+    const triggerBrowserFallback = () => {
+      if (chunkHandled || sessionToken !== activeSessionToken) return;
+      chunkHandled = true;
+      playViaBrowserSynthesis(currentText, langCode, () => {
+        if (sessionToken === activeSessionToken) {
+          playNextChunk();
+        }
+      });
+    };
 
     try {
       const audio = new Audio(streamUrl);
       currentAudioElement = audio;
 
       audio.onended = () => {
-        playNextChunk();
+        handleChunkEnd();
       };
 
       audio.onerror = () => {
-        console.warn('Cloud audio stream error, switching to browser Neural synthesis...');
-        playViaBrowserSynthesis(currentText, langCode, () => {
-          playNextChunk();
-        });
+        triggerBrowserFallback();
       };
 
-      await audio.play();
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          triggerBrowserFallback();
+        });
+      }
     } catch (err) {
-      console.warn('Direct audio play failed, utilizing browser neural synthesis fallback', err);
-      playViaBrowserSynthesis(currentText, langCode, () => {
-        playNextChunk();
-      });
+      triggerBrowserFallback();
     }
   };
 
@@ -193,15 +235,22 @@ const playViaBrowserSynthesis = (text: string, langCode: string, onComplete: () 
     return;
   }
 
+  let completed = false;
+  const finish = () => {
+    if (!completed) {
+      completed = true;
+      onComplete();
+    }
+  };
+
   const utterance = new SpeechSynthesisUtterance(text);
   currentUtterance = utterance;
 
   utterance.rate = 0.95;
-  utterance.pitch = 1.05; // Slightly warmer, conversational pitch
+  utterance.pitch = 1.05;
 
   const voices = window.speechSynthesis.getVoices();
 
-  // Prioritize high-definition Natural / Online neural voices
   const naturalVoice =
     voices.find(v => (v.name.includes('Natural') || v.name.includes('Online')) && v.lang.includes(langCode)) ||
     voices.find(v => v.name.includes('Google') && (v.lang.includes(langCode) || v.lang.includes('hi') || v.lang.includes('IN'))) ||
@@ -213,13 +262,8 @@ const playViaBrowserSynthesis = (text: string, langCode: string, onComplete: () 
     utterance.voice = naturalVoice;
   }
 
-  utterance.onend = () => {
-    onComplete();
-  };
-
-  utterance.onerror = () => {
-    onComplete();
-  };
+  utterance.onend = finish;
+  utterance.onerror = finish;
 
   window.speechSynthesis.speak(utterance);
 };
