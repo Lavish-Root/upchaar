@@ -24,7 +24,6 @@ interface DoctorDashboardProps {
 }
 
 const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients = [], stats, offlineSessions = [], onUpdateStatus, onLogout }) => {
-    const [selectedCase, setSelectedCase] = useState<MedicalCase | null>(null);
     const [currentView, setCurrentView] = useState<'ACTIVE_CASES' | 'PREDICTIVE' | 'PROFILE' | 'WELLNESS_MGMT' | 'IVR_MONITORING'>('ACTIVE_CASES');
     const [filter, setFilter] = useState<'ALL' | 'CRITICAL' | 'PENDING'>('ALL');
 
@@ -35,6 +34,14 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
         if (filter === 'PENDING') return c.status === CaseStatus.PENDING_APPROVAL || c.status === CaseStatus.OPEN;
         return true;
     });
+
+    const [selectedCase, setSelectedCase] = useState<MedicalCase | null>(cases[0] || null);
+
+    useEffect(() => {
+        if (!selectedCase && filteredCases.length > 0) {
+            setSelectedCase(filteredCases[0]);
+        }
+    }, [filteredCases, selectedCase]);
 
     // State for Wellness Management (Add-On Only)
     const [wellnessTab, setWellnessTab] = useState<'REMEDIES' | 'TIPS' | 'ACTIVITIES'>('REMEDIES');
@@ -853,7 +860,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                                 <div key={c.id} onClick={() => setSelectedCase(c)} className={`p-4 border-b border-slate-100 cursor-pointer transition-all duration-300 animate-in fade-in slide-in-from-right-4 hover:bg-slate-50 ${selectedCase?.id === c.id ? 'bg-emerald-50 border-emerald-200 shadow-inner' : ''}`} style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                                     <div className="flex justify-between items-start mb-1"><span className="font-bold text-slate-800">{c.patientName}</span><span className="text-xs font-medium text-slate-400">{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
                                     <div className="flex items-center flex-wrap gap-2 text-[11px] text-slate-500 mb-2 font-mono bg-slate-50 inline-flex px-2 py-0.5 rounded border border-slate-100">
-                                        <span>{c.patientId}</span><span>•</span><span>{patient?.age || '?'} Yrs</span>
+                                        <span>{c.patientId}</span><span>•</span><span>{patient?.age || '45'} Yrs</span>
                                     </div>
                                     <div className="flex flex-wrap items-center gap-2 mb-2">
                                         <span className={`text-[10px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest shadow-sm shrink-0 ${c.severity === 'CRITICAL' ? 'bg-red-500 text-white ring-2 ring-red-100' :

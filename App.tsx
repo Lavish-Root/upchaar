@@ -18,11 +18,28 @@ function App() {
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [aiConfig, setAiConfig] = useState(getAIConfig());
 
+  // Helper to ensure default / emergency cases and user-submitted cases are merged
+  const mergeCasesWithMocks = (savedCases: MedicalCase[]): MedicalCase[] => {
+    const existingIds = new Set(savedCases.map(c => c.id));
+    const result = [...savedCases];
+    for (const mc of MOCK_CASES) {
+      if (!existingIds.has(mc.id)) {
+        result.unshift(mc);
+        existingIds.add(mc.id);
+      }
+    }
+    return result;
+  };
+
   // Persistent States across sessions & tabs
   const [cases, setCases] = useState<MedicalCase[]>(() => {
     try {
       const saved = localStorage.getItem('ai_upchaar_cases');
-      return saved ? JSON.parse(saved) : MOCK_CASES;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return mergeCasesWithMocks(parsed);
+      }
+      return MOCK_CASES;
     } catch (e) {
       return MOCK_CASES;
     }
