@@ -6,11 +6,12 @@ import {
   Home, Volume2, Calendar, Truck, UserPlus, Image as ImageIcon,
   CreditCard, Banknote, Navigation, Smartphone, CheckCircle,
   Leaf, Sun, Snowflake, CloudRain, Zap, Heart, Info, ThumbsUp,
-  ExternalLink, Smile, Search, Pill, FlaskConical, Ambulance, Building, Clock
+  ExternalLink, Smile, Search, Pill, FlaskConical, Ambulance, Building, Clock, VolumeX
 } from 'lucide-react';
 import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity } from '../types';
 import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals, searchIndianLocation, reverseGeocodeLocality } from '../services/geminiService';
 import { UniversalChatSession } from '../services/aiService';
+import { playRealisticVoice, stopRealisticVoice, setVoiceStateListener } from '../services/voiceService';
 import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
 import Logo from './Logo';
 
@@ -120,6 +121,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [detectedPlaceName, setDetectedPlaceName] = useState<string>('');
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [facilityTypeFilter, setFacilityTypeFilter] = useState<'ALL' | 'HOSPITAL' | 'CLINIC' | 'PHARMACY' | 'PATHOLOGY_LAB' | 'AMBULANCE_HUB' | 'AYURVEDA'>('ALL');
+  const [isVoiceSpeaking, setIsVoiceSpeaking] = useState(false);
 
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -242,27 +244,18 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
     }
   };
 
-  const speakResponse = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
+  useEffect(() => {
+    setVoiceStateListener(setIsVoiceSpeaking);
+    return () => {
+      stopRealisticVoice();
+    };
+  }, []);
 
-      const voices = window.speechSynthesis.getVoices();
-
-      // Multilingual Detection for Speech Output
-      const isHindi = /[\u0900-\u097F]/.test(text);
-      const isPunjabi = /[\u0A00-\u0A7F]/.test(text);
-      let targetLang = 'en-IN';
-      if (isHindi) targetLang = 'hi-IN';
-      if (isPunjabi) targetLang = 'pa-IN';
-
-      const voice = voices.find(v => v.lang.includes(targetLang)) ||
-        voices.find(v => v.lang.includes('IN')) ||
-        voices[0];
-
-      if (voice) utterance.voice = voice;
-      window.speechSynthesis.speak(utterance);
+  const speakResponse = async (text: string) => {
+    try {
+      await playRealisticVoice(text);
+    } catch (e) {
+      console.warn("Speech playback error", e);
     }
   };
 
@@ -1445,12 +1438,46 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       <div className="flex-1 overflow-y-auto p-4 space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] rounded-2xl p-3 text-sm shadow-sm whitespace-pre-line ${msg.role === 'user' ? 'bg-emerald-600 text-white rounded-br-none' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
-              }`}>
+            <div className={`max-w-[85%] rounded-2xl p-3.5 text-sm shadow-sm whitespace-pre-line group relative ${
+              msg.role === 'user'
+                ? 'bg-emerald-600 text-white rounded-br-none'
+                : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
+            }`}>
               {msg.image && (
                 <img src={msg.image} alt="uploaded" className="w-full h-auto rounded-lg mb-2 border border-white/20" />
               )}
-              {msg.text}
+              <div className="leading-relaxed">{msg.text}</div>
+
+              {/* REALISTIC VOICE PLAYBACK BUTTON ON AI MESSAGES */}
+              {msg.role === 'model' && (
+                <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => {
+                      if (isVoiceSpeaking) {
+                        stopRealisticVoice();
+                      } else {
+                        playRealisticVoice(msg.text);
+                      }
+                    }}
+                    className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition active:scale-95 border border-emerald-200"
+                  >
+                    {isVoiceSpeaking ? (
+                      <>
+                        <VolumeX size={12} className="text-red-500" />
+                        <span>Stop Voice</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 size={12} className="text-emerald-600" />
+                        <span>Listen (Human Voice)</span>
+                      </>
+                    )}
+                  </button>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -1478,17 +1505,45 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
       <div className="p-3 bg-white border-t border-slate-200 shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {currentView === 'CONSULT_VOICE' ? (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <button
-              onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
-              disabled={isLoading}
-              className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${isListening ? 'bg-red-500 shadow-lg shadow-red-500/50 scale-110' : 'bg-emerald-600 hover:bg-emerald-700 shadow-lg'
-                } disabled:opacity-50`}
-            >
-              <Mic size={28} className="text-white" />
-            </button>
-            <p className="text-xs text-slate-500 font-medium">
-              {isListening ? 'Listening (Hindi/Eng/Punjabi)...' : isLoading ? 'Processing response...' : 'Tap to Speak'}
+          <div className="flex flex-col items-center gap-3 py-3">
+            {/* LIVE VOICE EQUALIZER / SPEAKING STATUS */}
+            {isVoiceSpeaking && (
+              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm animate-pulse">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                <span>AI Doctor Speaking (Human Neural Voice)...</span>
+                <button
+                  onClick={() => stopRealisticVoice()}
+                  className="ml-2 text-red-600 hover:text-red-800 bg-white px-2 py-0.5 rounded-md text-[10px] border border-red-200"
+                >
+                  Stop
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={isListening ? () => recognitionRef.current?.stop() : startListening}
+                disabled={isLoading}
+                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                  isListening
+                    ? 'bg-red-500 shadow-xl shadow-red-500/50 scale-110 ring-4 ring-red-200 animate-pulse'
+                    : isVoiceSpeaking
+                    ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40 ring-4 ring-emerald-100'
+                    : 'bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:scale-105 active:scale-95'
+                } disabled:opacity-50 text-white`}
+              >
+                <Mic size={28} />
+              </button>
+            </div>
+            
+            <p className="text-xs text-slate-500 font-medium text-center">
+              {isListening
+                ? '🎙️ Listening in Hindi, Punjabi & English...'
+                : isVoiceSpeaking
+                ? '🔊 Listening to AI Doctor voice...'
+                : isLoading
+                ? '⚡ Processing clinical advice...'
+                : 'Tap microphone to speak your symptoms'}
             </p>
           </div>
         ) : (

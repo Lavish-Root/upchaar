@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, PhoneOff, Mic, Activity, Volume2, ShieldAlert, User, Key, Truck, Home, Smartphone } from 'lucide-react';
+import { Phone, PhoneOff, Mic, Activity, Volume2, ShieldAlert, User, Key, Truck, Home, Smartphone, VolumeX } from 'lucide-react';
 import { getCallingAIResponse, getOTPAIResponse } from '../services/geminiService';
 import { MedicalCase, CaseSeverity, CaseStatus, OfflineSession } from '../types';
+import { playRealisticVoice, stopRealisticVoice } from '../services/voiceService';
 
 interface IVRSimulatorProps {
   onSaveOfflineSession: (session: OfflineSession) => void;
@@ -46,19 +46,13 @@ const IVRSimulator: React.FC<IVRSimulatorProps> = ({ onSaveOfflineSession }) => 
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = true;
+      recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'hi-IN';
 
       recognitionRef.current.onresult = (event: any) => {
-        let interimText = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-             handleInput(event.results[i][0].transcript);
-          } else {
-            interimText += event.results[i][0].transcript;
-            setCurrentTranscript(interimText);
-          }
-        }
+        const text = event.results[0][0].transcript;
+        setCurrentTranscript(text);
+        handleInput(text);
       };
 
       recognitionRef.current.onend = () => {
@@ -69,37 +63,21 @@ const IVRSimulator: React.FC<IVRSimulatorProps> = ({ onSaveOfflineSession }) => 
     }
   }, [isActive, isSpeaking, callState]);
 
-  const speak = (text: string, onEnd?: () => void) => {
+  const speak = async (text: string, onEnd?: () => void) => {
     setIsSpeaking(true);
-    window.speechSynthesis.cancel();
+    setTranscript(prev => [...prev, { role: 'ai', text }]);
     
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voices = window.speechSynthesis.getVoices();
-    
-    // Per-message dynamic language detection for IVR TTS
-    const isHindi = /[\u0900-\u097F]/.test(text); 
-    const isPunjabi = /[\u0A00-\u0A7F]/.test(text);
-    let targetLang = 'en-IN';
-    if (isHindi) targetLang = 'hi-IN';
-    if (isPunjabi) targetLang = 'pa-IN';
-
-    const voice = voices.find(v => v.lang.includes(targetLang)) || 
-                  voices.find(v => v.lang.includes('IN')) || 
-                  voices[0];
-
-    if (voice) utterance.voice = voice;
-    utterance.rate = 0.95;
-    
-    utterance.onend = () => {
+    try {
+      await playRealisticVoice(text);
+    } catch (e) {
+      console.warn("Speech error", e);
+    } finally {
       setIsSpeaking(false);
       if (onEnd) onEnd();
       else if (isActive && recognitionRef.current) {
         try { recognitionRef.current.start(); } catch (e) {}
       }
-    };
-    
-    window.speechSynthesis.speak(utterance);
-    setTranscript(prev => [...prev, { role: 'ai', text }]);
+    }
   };
 
   const startCall = () => {
@@ -169,7 +147,7 @@ const IVRSimulator: React.FC<IVRSimulatorProps> = ({ onSaveOfflineSession }) => 
 
   const endCall = () => {
     setIsActive(false);
-    window.speechSynthesis.cancel();
+    stopRealisticVoice();
     if (recognitionRef.current) recognitionRef.current.stop();
 
     const sessionData: OfflineSession = {
