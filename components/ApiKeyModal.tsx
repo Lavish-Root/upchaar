@@ -38,29 +38,50 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
           throw new Error('Please enter a Groq API Key first (starts with gsk_...)');
         }
 
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: config.groqModel || 'llama-3.3-70b-versatile',
-            messages: [{ role: 'user', content: 'Say "AI Upchaar Groq Connected"' }],
-            max_tokens: 15
-          })
-        });
+        const candidateModels = [
+          config.groqModel || 'openai/gpt-oss-120b',
+          'openai/gpt-oss-120b',
+          'openai/gpt-oss-20b',
+          'qwen/qwen3.8-27b',
+          'llama-3.3-70b-versatile'
+        ];
 
-        if (!res.ok) {
-          const err = await res.text();
-          throw new Error(`Groq returned ${res.status}: ${err}`);
+        let successReply = '';
+        let matchedModel = '';
+
+        for (const m of Array.from(new Set(candidateModels))) {
+          try {
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+              },
+              body: JSON.stringify({
+                model: m,
+                messages: [{ role: 'user', content: 'Say "AI Upchaar Groq Connected"' }],
+                max_tokens: 15
+              })
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              successReply = data.choices?.[0]?.message?.content || 'OK';
+              matchedModel = m;
+              break;
+            }
+          } catch (e) {
+            // try next model
+          }
         }
 
-        const data = await res.json();
-        const reply = data.choices?.[0]?.message?.content || 'OK';
+        if (!successReply) {
+          throw new Error('Groq connection failed. Please check your API key.');
+        }
+
         setTestStatus('SUCCESS');
-        setTestMessage(`Connection verified! Groq responded: "${reply.trim()}"`);
-        saveAIConfig(config);
+        setTestMessage(`Connection verified! Groq (${matchedModel}) responded: "${successReply.trim()}"`);
+        saveAIConfig({ ...config, groqModel: matchedModel || config.groqModel });
       } else if (config.provider === 'gemini') {
         const apiKey = config.geminiApiKey?.trim();
         if (!apiKey) {
@@ -217,14 +238,15 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Groq Model</label>
                 <select
-                  value={config.groqModel || 'llama-3.3-70b-versatile'}
+                  value={config.groqModel || 'openai/gpt-oss-120b'}
                   onChange={(e) => setConfig(prev => ({ ...prev, groqModel: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-sm outline-none font-medium"
                 >
-                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (Best Medical Triage & Hindi)</option>
-                  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Fastest Real-Time IVR Speed)</option>
-                  <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
-                  <option value="gemma2-9b-it">gemma2-9b-it</option>
+                  <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning & Triage)</option>
+                  <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fastest IVR & Doctor Chat)</option>
+                  <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Multilingual)</option>
+                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
                 </select>
               </div>
             </div>
