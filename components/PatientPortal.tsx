@@ -11,6 +11,7 @@ import {
 import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity } from '../types';
 import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals } from '../services/geminiService';
 import { UniversalChatSession } from '../services/aiService';
+import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
 import Logo from './Logo';
 
 // Declare Leaflet global for TypeScript
@@ -72,6 +73,8 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const [selectedRemedy, setSelectedRemedy] = useState<HomeRemedy | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<WellnessActivity | null>(null);
+  const [remedySeasonFilter, setRemedySeasonFilter] = useState<'AUTO' | 'ALL' | 'SUMMER' | 'MONSOON' | 'WINTER'>('AUTO');
+  const [wellnessCategoryFilter, setWellnessCategoryFilter] = useState<'ALL' | 'ELDERLY' | 'ADULTS'>('ALL');
 
   // Remedy UI interactions state
   const [likedRemedies, setLikedRemedies] = useState<Record<string, boolean>>({});
@@ -745,9 +748,33 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           </div>
         </div>
 
-        <p className="text-xs text-slate-500 px-1 font-medium">Recommended for common seasonal illnesses:</p>
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {[
+            { key: 'AUTO', label: `Current (${currentSeason})` },
+            { key: 'ALL', label: 'All Seasons' },
+            { key: 'MONSOON', label: 'Monsoon' },
+            { key: 'SUMMER', label: 'Summer' },
+            { key: 'WINTER', label: 'Winter' }
+          ].map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setRemedySeasonFilter(tab.key as any)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                remedySeasonFilter === tab.key
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-amber-50 hover:text-amber-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        {MOCK_REMEDIES.filter(r => r.season === currentSeason || r.season === Season.ALL).map((remedy, index) => (
+        {MOCK_REMEDIES.filter(r => {
+          if (remedySeasonFilter === 'ALL') return true;
+          if (remedySeasonFilter === 'AUTO') return r.season === currentSeason || r.season === Season.ALL;
+          return r.season === remedySeasonFilter || r.season === Season.ALL;
+        }).map((remedy, index) => (
           <div
             key={remedy.id}
             onClick={() => setSelectedRemedy(remedy)}
@@ -902,15 +929,28 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           <Activity className="absolute -right-4 -bottom-4 w-24 h-24 text-emerald-500 opacity-20" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-2">
-          {['ALL', 'ELDERLY', 'ADULTS'].map(tag => (
-            <button key={tag} className="px-3 py-2 bg-white rounded-xl text-[10px] font-bold text-slate-400 border border-slate-100 hover:border-emerald-400 hover:text-emerald-600 transition uppercase tracking-widest">
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          {(['ALL', 'ELDERLY', 'ADULTS'] as const).map(tag => (
+            <button
+              key={tag}
+              onClick={() => setWellnessCategoryFilter(tag)}
+              className={`px-3 py-2 rounded-xl text-[10px] font-bold transition uppercase tracking-widest ${
+                wellnessCategoryFilter === tag
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white text-slate-400 border border-slate-100 hover:border-emerald-400 hover:text-emerald-600'
+              }`}
+            >
               {tag}
             </button>
           ))}
         </div>
 
-        {MOCK_WELLNESS_ACTIVITIES.map((activity, index) => (
+        {MOCK_WELLNESS_ACTIVITIES.filter(act => {
+          if (wellnessCategoryFilter === 'ALL') return true;
+          if (wellnessCategoryFilter === 'ELDERLY') return act.ageGroup.toUpperCase().includes('SENIOR') || act.ageGroup.toUpperCase().includes('ALL') || act.level === 'BEGINNER';
+          if (wellnessCategoryFilter === 'ADULTS') return act.ageGroup.toUpperCase().includes('ADULT') || act.ageGroup.toUpperCase().includes('ALL');
+          return true;
+        }).map((activity, index) => (
           <div
             key={activity.id}
             onClick={() => setSelectedActivity(activity)}
@@ -1329,6 +1369,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         ))}
       </div>
       {renderCommentsSheet()}
+      {renderExpandedEmojiSheet()}
     </div>
   );
 
