@@ -10,8 +10,7 @@ import {
 } from 'lucide-react';
 import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity } from '../types';
 import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals } from '../services/geminiService';
-import { MOCK_HOSPITALS, MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
-import { Chat } from '@google/genai';
+import { UniversalChatSession } from '../services/aiService';
 import Logo from './Logo';
 
 // Declare Leaflet global for TypeScript
@@ -40,7 +39,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [chatSession, setChatSession] = useState<Chat | null>(null);
+  const [chatSession, setChatSession] = useState<UniversalChatSession | null>(null);
   const [triageResult, setTriageResult] = useState<TriageResult | null>(null);
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState('');

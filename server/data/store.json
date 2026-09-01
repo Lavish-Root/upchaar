@@ -1,0 +1,57 @@
+{
+  "cases": [
+    {
+      "id": "CS-2023-001",
+      "patientId": "P-101",
+      "patientName": "Ramesh Kumar",
+      "timestamp": "2026-09-01T10:30:00.000Z",
+      "mode": "IVR",
+      "symptoms": ["High Fever", "Chills", "Body Ache"],
+      "aiDiagnosis": "Likely Viral Fever or Malaria",
+      "severity": "MODERATE",
+      "status": "PENDING_APPROVAL",
+      "audioUrl": "",
+      "patientLocation": {
+        "lat": 30.901,
+        "lng": 75.8573,
+        "address": "Village Manwal, Ludhiana, Punjab"
+      },
+      "transcript": [
+        { "id": "1", "role": "model", "text": "Namaste, tell me your symptoms." },
+        { "id": "2", "role": "user", "text": "I have high fever since last night and shivering." },
+        { "id": "3", "role": "model", "text": "Do you have body ache?" },
+        { "id": "4", "role": "user", "text": "Yes, lots of pain in back and legs." }
+      ],
+      "prescription": "Paracetamol 500mg (1 tab TDS for 3 days)\nDrink plenty of fluids\nRest for 2 days",
+      "precautions": ["Isolate from family members", "Monitor temperature every 4 hours", "Use mosquito net"],
+      "deliveryEta": "Pending Dispatch"
+    },
+    {
+      "id": "CS-2023-002",
+      "patientId": "P-102",
+      "patientName": "Sunita Devi",
+      "timestamp": "2026-09-01T12:00:00.000Z",
+      "mode": "ONLINE",
+      "symptoms": ["Skin Rash", "Itching", "Redness"],
+      "aiDiagnosis": "Allergic Dermatitis",
+      "severity": "MILD",
+      "status": "APPROVED",
+      "approvalTimestamp": "2026-09-01T12:15:00.000Z",
+      "patientLocation": {
+        "lat": 31.634,
+        "lng": 74.8723,
+        "address": "Sector 4, Amritsar, Punjab"
+      },
+      "transcript": [
+        { "id": "1", "role": "user", "text": "I have a red rash on my arm." },
+        { "id": "2", "role": "model", "text": "Is it itchy or painful?" },
+        { "id": "3", "role": "user", "text": "Very itchy, no pain." }
+      ],
+      "prescription": "Cetirizine 10mg (1 tab OD for 5 days)\nCalamine Lotion (Apply twice daily)",
+      "precautions": ["Avoid scratching", "Keep area clean and dry", "Wear loose cotton clothes"],
+      "deliveryEta": "Today, 4:00 PM"
+    }
+  ],
+  "appointments": [],
+  "offlineSessions": []
+}

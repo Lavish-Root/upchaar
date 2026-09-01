@@ -1,19 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
-import { Phone, Stethoscope, User as UserIcon, LayoutGrid, LogOut, Loader2 } from 'lucide-react';
+import { Phone, Stethoscope, User as UserIcon, LayoutGrid, LogOut, Loader2, Key, Zap, Sparkles, Shield } from 'lucide-react';
 import PatientPortal from './components/PatientPortal';
 import DoctorDashboard from './components/DoctorDashboard';
 import IVRSimulator from './components/IVRSimulator';
 import LoginScreen from './components/LoginScreen';
+import ApiKeyModal from './components/ApiKeyModal';
 import Logo from './components/Logo';
 import { MOCK_CASES, MOCK_STATS, MOCK_PATIENTS } from './services/mockData';
 import { MedicalCase, CaseStatus, User, UserRole, Appointment, OfflineSession } from './types';
 import { logout, getSession } from './services/authService';
+import { getAIConfig } from './services/aiService';
 
 function App() {
   const [currentView, setCurrentView] = useState<'LOGIN' | 'PATIENT' | 'IVR' | 'DOCTOR'>('LOGIN');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAppLoading, setIsAppLoading] = useState(true);
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+  const [aiConfig, setAiConfig] = useState(getAIConfig());
 
   // Existing States (Strict Freeze)
   const [cases, setCases] = useState<MedicalCase[]>(MOCK_CASES);
@@ -101,6 +104,10 @@ function App() {
     setCurrentView('LOGIN');
   };
 
+  const refreshAIConfig = () => {
+    setAiConfig(getAIConfig());
+  };
+
   if (isAppLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
@@ -115,6 +122,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      <ApiKeyModal
+        isOpen={isKeyModalOpen}
+        onClose={() => {
+          setIsKeyModalOpen(false);
+          refreshAIConfig();
+        }}
+      />
+
       {(currentView !== 'LOGIN') && (
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -129,7 +144,23 @@ function App() {
                 </div>
               </button>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                {/* AI Key & Model Trigger */}
+                <button
+                  onClick={() => setIsKeyModalOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition shadow-sm"
+                  title="Configure Groq or Gemini API Key"
+                >
+                  {aiConfig.provider === 'groq' ? (
+                    <Zap size={14} className="text-emerald-600 fill-emerald-600" />
+                  ) : aiConfig.provider === 'gemini' ? (
+                    <Sparkles size={14} className="text-blue-600" />
+                  ) : (
+                    <Shield size={14} className="text-purple-600" />
+                  )}
+                  <span className="capitalize">{aiConfig.provider === 'groq' ? 'Groq Llama 3.3' : aiConfig.provider === 'gemini' ? 'Gemini AI' : 'Local AI'}</span>
+                </button>
+
                 {currentUser && (
                   <div className="flex items-center gap-2 sm:gap-4">
                     <span className="text-sm font-medium text-slate-700 hidden sm:block">
@@ -153,7 +184,11 @@ function App() {
 
       <main className={currentView === 'LOGIN' ? 'min-h-screen' : 'h-[calc(100vh-64px)]'}>
         {currentView === 'LOGIN' && (
-          <LoginScreen onLoginSuccess={handleLoginSuccess} onIVRSelect={() => setCurrentView('IVR')} />
+          <LoginScreen
+            onLoginSuccess={handleLoginSuccess}
+            onIVRSelect={() => setCurrentView('IVR')}
+            onOpenKeyModal={() => setIsKeyModalOpen(true)}
+          />
         )}
         {currentView === 'PATIENT' && currentUser && (
           <PatientPortal

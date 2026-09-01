@@ -218,7 +218,7 @@ export const MOCK_CASES: MedicalCase[] = [
     severity: CaseSeverity.MODERATE,
     status: CaseStatus.PENDING_APPROVAL,
     // Using MP3 for better compatibility across browsers (Safari, etc.)
-    audioUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3',
+    audioUrl: 'https://actions.google.com/sounds/v1/teleport/teleport_arrival.ogg',
     patientLocation: {
       lat: 30.9010,
       lng: 75.8573,
@@ -270,7 +270,7 @@ export const MOCK_CASES: MedicalCase[] = [
     severity: CaseSeverity.CRITICAL,
     status: CaseStatus.OPEN,
     // Using MP3 for better compatibility
-    audioUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3',
+    audioUrl: 'https://actions.google.com/sounds/v1/teleport/teleport_arrival.ogg',
     patientLocation: {
       lat: 30.3398,
       lng: 76.3869,
