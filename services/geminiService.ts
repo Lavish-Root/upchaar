@@ -13,10 +13,11 @@ import {
   TriageResult,
   UniversalChatSession
 } from './aiService';
-import { getLiveNearbyHospitals } from './hospitalService';
+import { getLiveNearbyHospitals, searchIndianLocation, reverseGeocodeLocality } from './hospitalService';
 import { PatientProfile, RiskPrediction, ModelHistoryEntry, Hospital } from '../types';
 
 export type { TriageResult };
+export { searchIndianLocation, reverseGeocodeLocality };
 
 export const startNewChat = (): UniversalChatSession => {
   return startUniversalChat();

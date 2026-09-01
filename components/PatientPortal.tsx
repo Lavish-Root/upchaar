@@ -6,10 +6,10 @@ import {
   Home, Volume2, Calendar, Truck, UserPlus, Image as ImageIcon,
   CreditCard, Banknote, Navigation, Smartphone, CheckCircle,
   Leaf, Sun, Snowflake, CloudRain, Zap, Heart, Info, ThumbsUp,
-  ExternalLink, Smile
+  ExternalLink, Smile, Search
 } from 'lucide-react';
 import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity } from '../types';
-import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals } from '../services/geminiService';
+import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals, searchIndianLocation, reverseGeocodeLocality } from '../services/geminiService';
 import { UniversalChatSession } from '../services/aiService';
 import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
 import Logo from './Logo';
@@ -116,6 +116,9 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
   const [locationLoading, setLocationLoading] = useState(false);
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [detectedPlaceName, setDetectedPlaceName] = useState<string>('');
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
 
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -130,17 +133,20 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   useEffect(() => {
     if (currentView === 'LOCATE_NEARBY' && mapContainerRef.current && !mapRef.current) {
-      const defaultPos = userLocation ? [userLocation.lat, userLocation.lng] : [30.9010, 75.8573];
+      // Default to user coordinates or center of India if GPS not yet resolved
+      const defaultPos = userLocation ? [userLocation.lat, userLocation.lng] : [26.5786, 74.8698];
       mapRef.current = L.map(mapContainerRef.current, {
         zoomControl: false,
         attributionControl: false
-      }).setView(defaultPos, 12);
+      }).setView(defaultPos, 13);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
       markersGroupRef.current = L.layerGroup().addTo(mapRef.current);
 
       if (nearbyHospitals.length > 0) {
         updateMapMarkers(nearbyHospitals, userLocation || undefined);
+      } else {
+        detectLocation();
       }
     }
 
@@ -506,6 +512,41 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
     onSubmitCase(newCase);
   };
 
+  const handleLocationSearch = async (queryToSearch?: string) => {
+    const q = queryToSearch || locationSearchQuery;
+    if (!q.trim()) return;
+    setIsSearchingLocation(true);
+    setLocationLoading(true);
+    try {
+      const result = await searchIndianLocation(q);
+      if (result) {
+        const loc = { lat: result.lat, lng: result.lng };
+        setUserLocation(loc);
+        setDetectedPlaceName(result.displayName);
+
+        const realFacilities = await getRealNearbyHospitals(loc.lat, loc.lng);
+        const withDistance = realFacilities.map(hospital => ({
+          ...hospital,
+          distance: `${calculateDistance(loc.lat, loc.lng, hospital.lat, hospital.lng).toFixed(1)} km`
+        }));
+
+        setNearbyHospitals(withDistance);
+
+        if (mapRef.current) {
+          mapRef.current.flyTo([loc.lat, loc.lng], 13);
+          updateMapMarkers(withDistance, loc);
+        }
+      } else {
+        alert(`Could not find "${q}". Please search with City, Town, or Village name (e.g. Kishangarh, Ajmer).`);
+      }
+    } catch (e) {
+      console.error("Location search failed", e);
+    } finally {
+      setIsSearchingLocation(false);
+      setLocationLoading(false);
+    }
+  };
+
   const detectLocation = () => {
     setLocationLoading(true);
     if ('geolocation' in navigator) {
@@ -524,9 +565,11 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           setUserLocation(loc);
 
           try {
+            const locality = await reverseGeocodeLocality(lat, lng);
+            setDetectedPlaceName(locality.fullAddress || `${locality.name}, ${locality.district}`);
+
             const realFacilities = await getRealNearbyHospitals(lat, lng);
 
-            // Enforce correct data mapping and calculate real distances
             const withDistance = realFacilities.map(hospital => ({
               ...hospital,
               distance: `${calculateDistance(lat, lng, hospital.lat, hospital.lng).toFixed(1)} km`
@@ -535,7 +578,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             setNearbyHospitals(withDistance);
 
             if (mapRef.current) {
-              mapRef.current.flyTo([lat, lng], 14);
+              mapRef.current.flyTo([lat, lng], 13);
               updateMapMarkers(withDistance, loc);
             }
           } catch (err) {
@@ -545,15 +588,16 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
           setLocationLoading(false);
         },
-        (err) => {
-          alert("Unable to retrieve location. GPS permission required.");
+        async (err) => {
+          console.warn("GPS permission not granted or unavailable, defaulting to user search...", err);
+          // If browser GPS is denied, auto-search for user's registered locality (e.g. Kishangarh, Ajmer)
+          await handleLocationSearch('Kishangarh, Ajmer');
           setLocationLoading(false);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     } else {
-      alert("Geolocation not supported by your device.");
-      setLocationLoading(false);
+      handleLocationSearch('Kishangarh, Ajmer');
     }
   };
 
@@ -1591,26 +1635,64 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       <div className="flex-1 flex flex-col relative overflow-hidden">
         <div ref={mapContainerRef} className="absolute inset-0 z-0"></div>
 
-        <div className="z-10 p-4 h-full flex flex-col pointer-events-none">
-          <div
-            className="bg-white p-2 rounded-xl shadow-lg flex items-center gap-2 pointer-events-auto mb-auto animate-in zoom-in-95 fade-in duration-500"
-            style={{ animationDelay: '300ms', animationFillMode: 'both' }}
-          >
-            <button
-              onClick={detectLocation}
-              disabled={locationLoading}
-              className="p-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex-shrink-0"
-            >
-              {locationLoading ? <Loader2 className="animate-spin" /> : <Navigation size={20} />}
-            </button>
-            <div className="flex-1 px-2">
-              <p className="text-sm font-semibold text-slate-800">
-                {userLocation ? "Location Detected" : "Find Nearby Hospitals"}
-              </p>
-              <p className="text-xs text-slate-500 truncate">
-                {userLocation ? `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}` : "Tap button to enable GPS"}
-              </p>
+        <div className="z-10 p-3 sm:p-4 h-full flex flex-col pointer-events-none">
+          {/* SEARCH & GPS CONTROL BAR */}
+          <div className="space-y-2 pointer-events-auto mb-auto animate-in zoom-in-95 fade-in duration-500">
+            <div className="bg-white/95 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-1.5">
+              <button
+                onClick={detectLocation}
+                disabled={locationLoading}
+                title="Use Current Device GPS"
+                className="p-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20"
+              >
+                {locationLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation size={18} />}
+              </button>
+              
+              <input
+                type="text"
+                value={locationSearchQuery}
+                onChange={e => setLocationSearchQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleLocationSearch();
+                  }
+                }}
+                placeholder="Search City, Village, or Pincode..."
+                className="flex-1 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+
+              <button
+                onClick={() => handleLocationSearch()}
+                disabled={isSearchingLocation || !locationSearchQuery.trim()}
+                className="p-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl transition flex items-center justify-center shrink-0 disabled:opacity-40"
+              >
+                {isSearchingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search size={16} />}
+              </button>
             </div>
+
+            {/* QUICK LOCATION PILLS */}
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+              {['Kishangarh', 'Ajmer', 'Jaipur', 'Pushkar'].map((city) => (
+                <button
+                  key={city}
+                  onClick={() => {
+                    setLocationSearchQuery(city);
+                    handleLocationSearch(city);
+                  }}
+                  className="px-2.5 py-1 bg-white/90 backdrop-blur-sm border border-slate-200 hover:border-emerald-500 text-[10px] font-bold text-slate-700 rounded-full shadow-sm whitespace-nowrap transition active:scale-95"
+                >
+                  📍 {city}
+                </button>
+              ))}
+            </div>
+
+            {detectedPlaceName && (
+              <div className="bg-emerald-50/95 backdrop-blur-sm border border-emerald-200 text-emerald-800 px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 shadow-sm animate-in fade-in slide-in-from-top-2">
+                <MapPin size={13} className="text-emerald-600 shrink-0" />
+                <span className="truncate">{detectedPlaceName}</span>
+              </div>
+            )}
           </div>
 
           {nearbyHospitals.length > 0 && (
