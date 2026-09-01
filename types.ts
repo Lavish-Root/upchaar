@@ -55,15 +55,22 @@ export interface MedicalCase {
   careSuggestions?: string;
 }
 
+export type FacilityType = 'HOSPITAL' | 'CLINIC' | 'PHARMACY' | 'PATHOLOGY_LAB' | 'AMBULANCE_HUB' | 'AYURVEDA';
+
 export interface Hospital {
   id: string;
   name: string;
   address: string;
   lat: number;
   lng: number;
-  type: 'HOSPITAL' | 'CLINIC';
+  type: FacilityType | 'HOSPITAL' | 'CLINIC';
   consultationFee: number;
   distance?: string;
+  travelTime?: string;
+  phone?: string;
+  timings?: string;
+  isOpenNow?: boolean;
+  tags?: string[];
   url?: string;
 }
 

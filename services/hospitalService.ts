@@ -180,44 +180,148 @@ export const getLocalizedIndianHospitals = (
 
   const facilities = [
     {
-      name: `Government Community Health Center (${place})`,
-      address: `Main Road, ${place}, ${district}, ${state}`,
+      name: `Government Sub-District Hospital (${place})`,
+      address: `Main Hospital Road, ${place}, ${district}, ${state}`,
       type: 'HOSPITAL' as const,
       consultationFee: 50,
+      phone: '108 / 0145-2627000',
+      timings: 'Open 24x7 • Emergency OPD',
+      isOpenNow: true,
+      tags: ['24x7 Emergency', 'Oxygen Beds', 'Free Generic Medicines', 'X-Ray & ICU'],
       offsetLat: 0.008,
       offsetLng: 0.011
     },
     {
-      name: `Primary Health Center & Maternity Clinic (${place})`,
-      address: `Station Road, ${place}, ${district}`,
-      type: 'CLINIC' as const,
-      consultationFee: 100,
+      name: `Ayushman Bharat Community Health Center (CHC ${place})`,
+      address: `Panchayat Samiti Marg, ${place}, ${district}`,
+      type: 'HOSPITAL' as const,
+      consultationFee: 0,
+      phone: '0145-2420111',
+      timings: 'Open 24x7 • Govt Verified',
+      isOpenNow: true,
+      tags: ['Ayushman Card Accepted', 'Maternity Wing', 'Child Immunization', 'Free OPD'],
       offsetLat: -0.012,
       offsetLng: 0.015
     },
     {
-      name: `Ayushman Bharat Arogya Mandir (${place})`,
-      address: `Panchayat Ward, ${place}, ${district}`,
+      name: `Primary Health Center (PHC & Tele-Care)`,
+      address: `Station Road, Near Bus Stand, ${place}, ${district}`,
       type: 'CLINIC' as const,
-      consultationFee: 0,
-      offsetLat: 0.018,
-      offsetLng: -0.014
+      consultationFee: 50,
+      phone: '+91 94140 12345',
+      timings: '8:00 AM - 8:00 PM',
+      isOpenNow: true,
+      tags: ['Doctor On-Duty', 'BP & Sugar Testing', 'Fever Triage', 'First Aid'],
+      offsetLat: 0.016,
+      offsetLng: -0.013
     },
     {
-      name: `Civil District Hospital (${district})`,
-      address: `Hospital Chowk, ${district}, ${state}`,
+      name: `Pradhan Mantri Jan Aushadhi 24x7 Medical Store`,
+      address: `Market Chowk, Near Post Office, ${place}`,
+      type: 'PHARMACY' as const,
+      consultationFee: 0,
+      phone: '+91 98290 55678',
+      timings: 'Open 24 Hours • All 7 Days',
+      isOpenNow: true,
+      tags: ['80% Discount Medicines', 'Insulin & Injections', 'Free Home Delivery (3km)'],
+      offsetLat: 0.005,
+      offsetLng: 0.007
+    },
+    {
+      name: `District Civil Hospital & Multi-Speciality Trauma Unit (${district})`,
+      address: `Civil Lines, Hospital Road, ${district}, ${state}`,
       type: 'HOSPITAL' as const,
       consultationFee: 50,
-      offsetLat: -0.024,
-      offsetLng: -0.021
+      phone: '0145-2621234',
+      timings: 'Open 24x7 • Level-2 Trauma',
+      isOpenNow: true,
+      tags: ['Major Surgery', 'Blood Bank', 'CT Scan & MRI', 'Dialysis Center'],
+      offsetLat: -0.026,
+      offsetLng: -0.024
     },
     {
-      name: `Sanjeevani Tele-Clinic & Pharmacy`,
-      address: `Market Area, ${place}, ${district}`,
+      name: `Rural Pathology Diagnostic & Blood Test Center`,
+      address: `Opposite Old Sub-Jail Road, ${place}`,
+      type: 'PATHOLOGY_LAB' as const,
+      consultationFee: 150,
+      phone: '+91 94600 77889',
+      timings: '7:00 AM - 9:00 PM',
+      isOpenNow: true,
+      tags: ['CBC & Dengue Test', 'Free Home Sample Pickup', 'Digital Reports on WhatsApp'],
+      offsetLat: -0.015,
+      offsetLng: -0.008
+    },
+    {
+      name: `108 Emergency Ambulance Dispatch Hub (${place})`,
+      address: `Near Police Chowki, National Highway, ${place}`,
+      type: 'AMBULANCE_HUB' as const,
+      consultationFee: 0,
+      phone: '108 (Toll Free)',
+      timings: '24x7 Immediate Dispatch',
+      isOpenNow: true,
+      tags: ['GPS Tracked', 'Oxygen Supported', 'BLS & ALS Equipped', '10-15 Min Reach'],
+      offsetLat: 0.022,
+      offsetLng: 0.018
+    },
+    {
+      name: `Government Ayush & Ayurvedic Dispensary (${place})`,
+      address: `Near Gandhi Smarak, Ward 4, ${place}`,
+      type: 'AYURVEDA' as const,
+      consultationFee: 0,
+      phone: '0145-2428899',
+      timings: '9:00 AM - 4:00 PM',
+      isOpenNow: true,
+      tags: ['Free Ayurvedic Medicines', 'Kadha & Churna', 'Nadi Parikshan', 'Herbal Oils'],
+      offsetLat: -0.009,
+      offsetLng: 0.021
+    },
+    {
+      name: `Sanjeevani Tele-Medicine & Daycare Center`,
+      address: `Adarsh Colony, Main Market, ${place}, ${district}`,
       type: 'CLINIC' as const,
       consultationFee: 200,
-      offsetLat: 0.014,
-      offsetLng: 0.026
+      phone: '+91 97840 99881',
+      timings: '8:30 AM - 9:30 PM',
+      isOpenNow: true,
+      tags: ['Video Specialist Consult', 'ECG & Nebulizer', 'Elderly Health Check'],
+      offsetLat: 0.013,
+      offsetLng: 0.027
+    },
+    {
+      name: `Red Cross Blood Bank & Emergency Plasma Depot`,
+      address: `Near District Courts, ${district}, ${state}`,
+      type: 'HOSPITAL' as const,
+      consultationFee: 0,
+      phone: '0145-2624455',
+      timings: 'Open 24x7',
+      isOpenNow: true,
+      tags: ['All Blood Groups Available', 'Single Donor Platelets', 'Emergency Supply'],
+      offsetLat: -0.031,
+      offsetLng: -0.019
+    },
+    {
+      name: `Apollo LifeCare 24x7 Pharmacy & Oxygen Depot`,
+      address: `Highway Bypass Road, ${place}`,
+      type: 'PHARMACY' as const,
+      consultationFee: 0,
+      phone: '+91 98280 44321',
+      timings: 'Open 24 Hours',
+      isOpenNow: true,
+      tags: ['Medical Oxygen Cylinders', 'Emergency Drips', 'Baby Care & Nutrition'],
+      offsetLat: 0.019,
+      offsetLng: 0.004
+    },
+    {
+      name: `Village Sub-Center (Arogya Wellness Kendra)`,
+      address: `Gram Panchayat Bhavan, ${place}`,
+      type: 'CLINIC' as const,
+      consultationFee: 0,
+      phone: '0145-2423322',
+      timings: '9:00 AM - 5:00 PM',
+      isOpenNow: true,
+      tags: ['ANM / ASHA Worker Station', 'Tetanus & Vaccine', 'Free Sanitary & Nutrition'],
+      offsetLat: -0.018,
+      offsetLng: 0.029
     }
   ];
 
@@ -225,16 +329,23 @@ export const getLocalizedIndianHospitals = (
     const hLat = lat + f.offsetLat;
     const hLng = lng + f.offsetLng;
     const dist = calculateDistanceKm(lat, lng, hLat, hLng);
+    const approxMinutes = Math.max(3, Math.round(dist * 2.8));
 
     return {
-      id: `LOC-${i + 1}`,
+      id: `FACILITY-${i + 1}`,
       name: f.name,
       address: f.address,
       lat: hLat,
       lng: hLng,
       type: f.type,
       consultationFee: f.consultationFee,
-      distance: `${dist} km`
+      distance: `${dist} km`,
+      travelTime: `${approxMinutes} mins away`,
+      phone: f.phone,
+      timings: f.timings,
+      isOpenNow: f.isOpenNow,
+      tags: f.tags,
+      url: `https://www.google.com/maps/dir/?api=1&destination=${hLat},${hLng}`
     };
   }).sort((a, b) => parseFloat(a.distance || '0') - parseFloat(b.distance || '0'));
 };

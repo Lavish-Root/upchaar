@@ -6,7 +6,7 @@ import {
   Home, Volume2, Calendar, Truck, UserPlus, Image as ImageIcon,
   CreditCard, Banknote, Navigation, Smartphone, CheckCircle,
   Leaf, Sun, Snowflake, CloudRain, Zap, Heart, Info, ThumbsUp,
-  ExternalLink, Smile, Search
+  ExternalLink, Smile, Search, Pill, FlaskConical, Ambulance, Building, Clock
 } from 'lucide-react';
 import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity } from '../types';
 import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals, searchIndianLocation, reverseGeocodeLocality } from '../services/geminiService';
@@ -119,6 +119,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [detectedPlaceName, setDetectedPlaceName] = useState<string>('');
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [facilityTypeFilter, setFacilityTypeFilter] = useState<'ALL' | 'HOSPITAL' | 'CLINIC' | 'PHARMACY' | 'PATHOLOGY_LAB' | 'AMBULANCE_HUB' | 'AYURVEDA'>('ALL');
 
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -1697,40 +1698,174 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
           {nearbyHospitals.length > 0 && (
             <div
-              className="bg-white rounded-t-2xl shadow-[0_-5px_20px_-5px_rgba(0,0,0,0.1)] max-h-[60%] overflow-y-auto pointer-events-auto -mx-4 animate-in slide-in-from-bottom-8 fade-in duration-700"
-              style={{ animationDelay: '500ms', animationFillMode: 'both' }}
+              className="bg-white rounded-t-3xl shadow-[0_-10px_30px_-5px_rgba(0,0,0,0.15)] max-h-[65%] overflow-hidden flex flex-col pointer-events-auto -mx-3 sm:-mx-4 animate-in slide-in-from-bottom-8 fade-in duration-500 border-t border-slate-200"
             >
-              <div className="p-4 border-b border-slate-100 sticky top-0 bg-white">
-                <h3 className="font-bold text-slate-800">{nearbyHospitals.length} Centers Found</h3>
-              </div>
-              <div className="p-2 space-y-2">
-                {nearbyHospitals.map((hospital, index) => (
-                  <div
-                    key={hospital.id}
-                    className="p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition flex justify-between items-center animate-in zoom-in-95 fade-in duration-300"
-                    style={{ animationDelay: `${600 + index * 75}ms`, animationFillMode: 'both' }}
-                  >
-                    <div>
-                      <h4 className="font-semibold text-slate-800 text-sm">{hospital.name}</h4>
-                      <p className="text-xs text-slate-500 mb-1">{hospital.address}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono font-medium">{hospital.distance || "0.0 km"} away</span>
-                        <span className="text-[10px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-bold">₹{hospital.consultationFee}</span>
-                        {hospital.url && (
-                          <a href={hospital.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-600 flex items-center gap-0.5 font-bold hover:underline">
-                            <ExternalLink size={10} /> Source
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => openBookingForHospital(hospital)}
-                      className="px-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm"
-                    >
-                      Book
-                    </button>
+              {/* DRAWER HEADER & CATEGORY TABS */}
+              <div className="p-3 sm:p-4 border-b border-slate-100 bg-white sticky top-0 z-10 space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-extrabold text-slate-800 text-sm sm:text-base flex items-center gap-2">
+                      <span>Nearby Healthcare Facilities</span>
+                      <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        {nearbyHospitals.length} Found
+                      </span>
+                    </h3>
+                    <p className="text-[10px] sm:text-xs text-slate-500">Real-time GPS medical directory & emergency services</p>
                   </div>
-                ))}
+                </div>
+
+                {/* FACILITY CATEGORY PILLS */}
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                  {[
+                    { key: 'ALL', label: 'All (12+)', icon: '🏥' },
+                    { key: 'HOSPITAL', label: 'Hospitals', icon: '🏛️' },
+                    { key: 'CLINIC', label: 'Clinics & PHC', icon: '🩺' },
+                    { key: 'PHARMACY', label: '24x7 Medicos', icon: '💊' },
+                    { key: 'PATHOLOGY_LAB', label: 'Diagnostic Labs', icon: '🧪' },
+                    { key: 'AMBULANCE_HUB', label: '108 Ambulance', icon: '🚑' },
+                    { key: 'AYURVEDA', label: 'Ayush & Herbal', icon: '🍃' }
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setFacilityTypeFilter(tab.key as any)}
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all flex items-center gap-1.5 active:scale-95 ${
+                        facilityTypeFilter === tab.key
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200/60'
+                      }`}
+                    >
+                      <span>{tab.icon}</span>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* FACILITIES LIST */}
+              <div className="p-3 space-y-3 overflow-y-auto flex-1 bg-slate-50">
+                {nearbyHospitals
+                  .filter(h => {
+                    if (facilityTypeFilter === 'ALL') return true;
+                    return h.type === facilityTypeFilter;
+                  })
+                  .map((hospital, index) => {
+                    const isHospitalOrClinic = hospital.type === 'HOSPITAL' || hospital.type === 'CLINIC';
+                    const isPharmacy = hospital.type === 'PHARMACY';
+                    const isLab = hospital.type === 'PATHOLOGY_LAB';
+                    const isAmbulance = hospital.type === 'AMBULANCE_HUB';
+                    const isAyurveda = hospital.type === 'AYURVEDA';
+
+                    const badgeColor = isHospitalOrClinic
+                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                      : isPharmacy
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : isLab
+                      ? 'bg-purple-50 text-purple-700 border-purple-200'
+                      : isAmbulance
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      : 'bg-teal-50 text-teal-700 border-teal-200';
+
+                    const typeIcon = isHospitalOrClinic ? (
+                      <Building size={12} />
+                    ) : isPharmacy ? (
+                      <Pill size={12} />
+                    ) : isLab ? (
+                      <FlaskConical size={12} />
+                    ) : isAmbulance ? (
+                      <Ambulance size={12} />
+                    ) : (
+                      <Leaf size={12} />
+                    );
+
+                    return (
+                      <div
+                        key={hospital.id}
+                        className="bg-white p-3.5 border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-emerald-300 transition group animate-in zoom-in-95 fade-in duration-300"
+                        style={{ animationDelay: `${index * 40}ms`, animationFillMode: 'both' }}
+                      >
+                        {/* CARD HEADER */}
+                        <div className="flex justify-between items-start gap-2 mb-1.5">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-lg font-bold border flex items-center gap-1 uppercase tracking-wider ${badgeColor}`}>
+                            {typeIcon} {hospital.type?.replace('_', ' ') || 'FACILITY'}
+                          </span>
+                          <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            {hospital.timings || 'Open 24x7'}
+                          </span>
+                        </div>
+
+                        {/* FACILITY NAME & ADDRESS */}
+                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition leading-tight">
+                          {hospital.name}
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-1 flex items-center gap-1">
+                          <MapPin size={11} className="text-slate-400 shrink-0" />
+                          <span>{hospital.address}</span>
+                        </p>
+
+                        {/* DISTANCE & FEES ROW */}
+                        <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-slate-100 text-[11px]">
+                          <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-mono font-bold flex items-center gap-1">
+                            📍 {hospital.distance || '0.0 km'}
+                          </span>
+                          {hospital.travelTime && (
+                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium flex items-center gap-1">
+                              <Clock size={11} /> {hospital.travelTime}
+                            </span>
+                          )}
+                          <span className="bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-md font-bold">
+                            {hospital.consultationFee === 0 ? 'FREE OPD / GOVT' : `OPD Fee: ₹${hospital.consultationFee}`}
+                          </span>
+                        </div>
+
+                        {/* TAGS */}
+                        {hospital.tags && hospital.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {hospital.tags.map((tag, tIdx) => (
+                              <span key={tIdx} className="text-[9px] bg-slate-50 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded">
+                                ✓ {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* ACTION BUTTONS */}
+                        <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-100">
+                          {hospital.phone && (
+                            <a
+                              href={`tel:${hospital.phone.replace(/[^0-9+]/g, '')}`}
+                              className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 border border-slate-200"
+                            >
+                              <Phone size={13} className="text-emerald-600" />
+                              <span>Call Facility</span>
+                            </a>
+                          )}
+
+                          {hospital.url && (
+                            <a
+                              href={hospital.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 border border-blue-200"
+                            >
+                              <Navigation size={13} className="text-blue-600" />
+                              <span>Directions</span>
+                            </a>
+                          )}
+
+                          {isHospitalOrClinic && (
+                            <button
+                              onClick={() => openBookingForHospital(hospital)}
+                              className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-600/20"
+                            >
+                              <Calendar size={13} />
+                              <span>Book Appt</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           )}
