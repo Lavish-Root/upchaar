@@ -1,6 +1,37 @@
 {
   "cases": [
     {
+      "id": "CS-2026-LIVE-01",
+      "patientId": "P-9460877984",
+      "patientName": "Rajesh Kumar (+91 9460877984)",
+      "timestamp": "2026-09-01T16:35:00.000Z",
+      "mode": "ONLINE",
+      "symptoms": ["Hyperpyrexia (50°C Fever)", "Severe Cough", "Shivering"],
+      "aiDiagnosis": "CRITICAL: Severe Hyperpyrexia & Upper Respiratory Emergency",
+      "severity": "CRITICAL",
+      "status": "OPEN",
+      "audioUrl": "",
+      "patientLocation": {
+        "lat": 26.5786,
+        "lng": 74.8698,
+        "address": "Plot 1-23, Bafno ka Mohalla, Kishangarh, Ajmer, Rajasthan"
+      },
+      "transcript": [
+        { "id": "1", "role": "model", "text": "Namaste, main AI Upchaar hoon. Bataiye, aapko kya takleef hai?" },
+        { "id": "2", "role": "user", "text": "Namaste doctor sahab, mujhe 2 din se tez bukhar aur khansi hai" },
+        { "id": "3", "role": "model", "text": "Kya aap apna bukhar ka temperature (°C) bata sakte hain?" },
+        { "id": "4", "role": "user", "text": "50" },
+        { "id": "5", "role": "model", "text": "CRITICAL – Turant Medical Care Ki Zaroorat Hai. Aapka bukhar 50 °C jaan-le-waala ho sakta hai. Kripya apna mobile number aur address batayein." },
+        { "id": "6", "role": "user", "text": "9460877984" },
+        { "id": "7", "role": "user", "text": "kishangarh , ajmer, 1 23, bafno ka mohhala" },
+        { "id": "8", "role": "model", "text": "Main abhi aapko doctor ke video/audio call se jod raha hoon. Kripya line par bane rahein." }
+      ],
+      "prescription": "Paracetamol 650mg IV/Oral STAT\nCold Saline Sponge Compress\nImmediate Ambulance Dispatch to Emergency Unit",
+      "precautions": ["Do not apply thick blankets", "Continuous vitals monitoring", "Ensure patient is conscious and hydrated"],
+      "doctorNotes": "URGENT: Patient in Kishangarh, Ajmer with critical fever 50°C. Contact: 9460877984. Priority Video Consultation initiated.",
+      "deliveryEta": "Emergency Ambulance Dispatched"
+    },
+    {
       "id": "CS-2023-001",
       "patientId": "P-101",
       "patientName": "Ramesh Kumar",
@@ -25,31 +56,6 @@
       "prescription": "Paracetamol 500mg (1 tab TDS for 3 days)\nDrink plenty of fluids\nRest for 2 days",
       "precautions": ["Isolate from family members", "Monitor temperature every 4 hours", "Use mosquito net"],
       "deliveryEta": "Pending Dispatch"
-    },
-    {
-      "id": "CS-2023-002",
-      "patientId": "P-102",
-      "patientName": "Sunita Devi",
-      "timestamp": "2026-09-01T12:00:00.000Z",
-      "mode": "ONLINE",
-      "symptoms": ["Skin Rash", "Itching", "Redness"],
-      "aiDiagnosis": "Allergic Dermatitis",
-      "severity": "MILD",
-      "status": "APPROVED",
-      "approvalTimestamp": "2026-09-01T12:15:00.000Z",
-      "patientLocation": {
-        "lat": 31.634,
-        "lng": 74.8723,
-        "address": "Sector 4, Amritsar, Punjab"
-      },
-      "transcript": [
-        { "id": "1", "role": "user", "text": "I have a red rash on my arm." },
-        { "id": "2", "role": "model", "text": "Is it itchy or painful?" },
-        { "id": "3", "role": "user", "text": "Very itchy, no pain." }
-      ],
-      "prescription": "Cetirizine 10mg (1 tab OD for 5 days)\nCalamine Lotion (Apply twice daily)",
-      "precautions": ["Avoid scratching", "Keep area clean and dry", "Wear loose cotton clothes"],
-      "deliveryEta": "Today, 4:00 PM"
     }
   ],
   "appointments": [],

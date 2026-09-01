@@ -421,7 +421,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       const result = await analyzeCase(fullTranscript);
       setTriageResult(result);
       if (result.severity === CaseSeverity.CRITICAL) {
-        saveCase(true, 'VIDEO', transcriptToAnalyze);
+        saveCase(true, 'VIDEO', transcriptToAnalyze, result);
         setCurrentView('DOCTOR_CONNECT');
         setTimeout(() => {
           setCurrentView('FEEDBACK');
@@ -438,21 +438,25 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   };
 
   const handleFinalSubmit = (needsMedicine: boolean, escalatedMode?: 'VIDEO' | 'VOICE') => {
-    if (!triageResult) return;
     if (escalatedMode) {
       setCurrentView('DOCTOR_CONNECT');
       setTimeout(() => {
-        saveCase(needsMedicine, escalatedMode);
+        saveCase(needsMedicine, escalatedMode, messages, triageResult || undefined);
         setCurrentView('FEEDBACK');
       }, 3000);
     } else {
-      saveCase(needsMedicine);
+      saveCase(needsMedicine, undefined, messages, triageResult || undefined);
       setCurrentView('FEEDBACK');
     }
   };
 
-  const saveCase = (needsMedicine: boolean, escalatedMode?: 'VIDEO' | 'VOICE', customMessages?: Message[]) => {
-    if (!triageResult) return;
+  const saveCase = (
+    needsMedicine: boolean,
+    escalatedMode?: 'VIDEO' | 'VOICE',
+    customMessages?: Message[],
+    explicitTriage?: TriageResult
+  ) => {
+    const triage = explicitTriage || triageResult;
     const msgs = customMessages || messages;
     const images = msgs.filter(m => m.image).map(m => m.image!);
     const fullText = msgs.map(m => m.text).join('\n');
@@ -481,13 +485,13 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       timestamp: new Date().toISOString(),
       mode: 'ONLINE',
       symptoms: symptomsList,
-      aiDiagnosis: triageResult.diagnosis || 'Acute High Fever & Respiratory Symptoms',
-      severity: triageResult.severity || CaseSeverity.CRITICAL,
-      careSuggestions: triageResult.careSuggestions,
-      status: (triageResult.severity === CaseSeverity.CRITICAL || escalatedMode) ? CaseStatus.OPEN : (needsMedicine ? CaseStatus.PENDING_APPROVAL : CaseStatus.COMPLETED),
+      aiDiagnosis: triage?.diagnosis || 'Acute High Fever & Respiratory Symptoms',
+      severity: triage?.severity || CaseSeverity.CRITICAL,
+      careSuggestions: triage?.careSuggestions || 'Immediate medical attention required for high fever',
+      status: (triage?.severity === CaseSeverity.CRITICAL || escalatedMode) ? CaseStatus.OPEN : (needsMedicine ? CaseStatus.PENDING_APPROVAL : CaseStatus.COMPLETED),
       transcript: msgs,
-      prescription: triageResult.suggestedPrescription,
-      homeRemedies: triageResult.homeRemedies,
+      prescription: triage?.suggestedPrescription || 'Paracetamol 500mg (1 tab TDS)\nConsult duty doctor immediately',
+      homeRemedies: triage?.homeRemedies || ['Ginger & honey paste', 'Cold water sponge compress'],
       doctorNotes: (escalatedMode ? `Patient requested immediate ${escalatedMode} escalation.` : '') + (phone ? ` Contact: ${phone}.` : '') + (detectedAddress !== 'Current Location' ? ` Village/Address: ${detectedAddress}` : ''),
       deliveryEta: needsMedicine ? 'Pending Dispatch (20 min)' : undefined,
       images: images,

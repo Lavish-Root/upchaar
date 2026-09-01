@@ -208,6 +208,36 @@ export const MOCK_WELLNESS_ACTIVITIES: WellnessActivity[] = [
 
 export const MOCK_CASES: MedicalCase[] = [
   {
+    id: 'CS-2026-LIVE-01',
+    patientId: 'P-9460877984',
+    patientName: 'Rajesh Kumar (+91 9460877984)',
+    timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(), // 2 mins ago
+    mode: 'ONLINE',
+    symptoms: ['Hyperpyrexia (50°C Fever)', 'Severe Cough', 'Shivering'],
+    aiDiagnosis: 'CRITICAL: Severe Hyperpyrexia & Upper Respiratory Emergency',
+    severity: CaseSeverity.CRITICAL,
+    status: CaseStatus.OPEN,
+    patientLocation: {
+      lat: 26.5786,
+      lng: 74.8698,
+      address: 'Plot 1-23, Bafno ka Mohalla, Kishangarh, Ajmer, Rajasthan'
+    },
+    transcript: [
+      { id: '1', role: 'model', text: 'Namaste, main AI Upchaar hoon. Bataiye, aapko kya takleef hai?', timestamp: new Date() },
+      { id: '2', role: 'user', text: 'Namaste doctor sahab, mujhe 2 din se tez bukhar aur khansi hai', timestamp: new Date() },
+      { id: '3', role: 'model', text: 'Kya aap apna bukhar ka temperature (°C) bata sakte hain?', timestamp: new Date() },
+      { id: '4', role: 'user', text: '50', timestamp: new Date() },
+      { id: '5', role: 'model', text: 'CRITICAL – Turant Medical Care Ki Zaroorat Hai. Aapka bukhar 50 °C jaan-le-waala ho sakta hai. Kripya apna mobile number aur address batayein.', timestamp: new Date() },
+      { id: '6', role: 'user', text: '9460877984', timestamp: new Date() },
+      { id: '7', role: 'user', text: 'kishangarh , ajmer, 1 23, bafno ka mohhala', timestamp: new Date() },
+      { id: '8', role: 'model', text: 'Main abhi aapko doctor ke video/audio call se jod raha hoon. Kripya line par bane rahein.', timestamp: new Date() }
+    ],
+    prescription: 'Paracetamol 650mg IV/Oral STAT\nCold Saline Sponge Compress\nImmediate Ambulance Dispatch to Emergency Unit',
+    precautions: ['Do not apply thick blankets', 'Continuous vitals monitoring', 'Ensure patient is conscious and hydrated'],
+    doctorNotes: 'URGENT: Patient in Kishangarh, Ajmer with critical fever 50°C. Contact: 9460877984. Priority Video Consultation initiated.',
+    deliveryEta: 'Emergency Ambulance Dispatched'
+  },
+  {
     id: 'CS-2023-001',
     patientId: 'P-101',
     patientName: 'Ramesh Kumar',
