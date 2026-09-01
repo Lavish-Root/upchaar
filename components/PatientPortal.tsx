@@ -345,9 +345,9 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       image: imageBase64
     };
 
-    const exitPhrases = ['thank you', 'thanks', 'shukriya', 'dhanyavaad', 'dhanyavad'];
+    const exitPhrases = ['thank you', 'thanks', 'shukriya', 'dhanyavaad', 'dhanyavad', 'ji haa', 'ji haan', 'haan ji', 'theek hai', 'thik hai', 'confirm'];
     const lowerText = text.toLowerCase().trim();
-    const isExitPhrase = exitPhrases.some(phrase => lowerText.includes(phrase));
+    const isExitPhrase = exitPhrases.some(phrase => lowerText === phrase || lowerText.includes(phrase)) && messages.length >= 3;
 
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
@@ -455,25 +455,45 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
     if (!triageResult) return;
     const msgs = customMessages || messages;
     const images = msgs.filter(m => m.image).map(m => m.image!);
+    const fullText = msgs.map(m => m.text).join('\n');
+
+    // Extract phone number from transcript if patient mentioned it
+    const phoneMatch = fullText.match(/\b[6-9]\d{9}\b/);
+    const phone = phoneMatch ? phoneMatch[0] : (user.mobileNumber || '');
+
+    // Extract address from transcript if patient mentioned it
+    let detectedAddress = 'Current Location';
+    const lines = fullText.split('\n');
+    for (const line of lines) {
+      if (/kishangarh|ajmer|village|colony|mohalla|plot|ward|gali|house|nagar|pur/i.test(line) && !line.startsWith('model:')) {
+        detectedAddress = line.replace(/user:\s*/i, '').trim();
+        break;
+      }
+    }
+
+    const userMsgs = msgs.filter(m => m.role === 'user').map(m => m.text);
+    const symptomsList = userMsgs.length > 0 ? userMsgs.slice(0, 3) : ['High Fever', 'Cough'];
 
     const newCase: MedicalCase = {
       id: `CS-${Date.now()}`,
       patientId: user.id,
-      patientName: user.name,
+      patientName: user.name + (phone ? ` (${phone})` : ''),
       timestamp: new Date().toISOString(),
       mode: 'ONLINE',
-      symptoms: ['Extracted from chat'],
-      aiDiagnosis: triageResult.diagnosis,
-      severity: triageResult.severity,
+      symptoms: symptomsList,
+      aiDiagnosis: triageResult.diagnosis || 'Acute High Fever & Respiratory Symptoms',
+      severity: triageResult.severity || CaseSeverity.CRITICAL,
       careSuggestions: triageResult.careSuggestions,
       status: (triageResult.severity === CaseSeverity.CRITICAL || escalatedMode) ? CaseStatus.OPEN : (needsMedicine ? CaseStatus.PENDING_APPROVAL : CaseStatus.COMPLETED),
       transcript: msgs,
       prescription: triageResult.suggestedPrescription,
       homeRemedies: triageResult.homeRemedies,
-      doctorNotes: escalatedMode ? `Patient requested ${escalatedMode} escalation.` : undefined,
-      deliveryEta: needsMedicine ? 'Calculating...' : undefined,
+      doctorNotes: (escalatedMode ? `Patient requested immediate ${escalatedMode} escalation.` : '') + (phone ? ` Contact: ${phone}.` : '') + (detectedAddress !== 'Current Location' ? ` Village/Address: ${detectedAddress}` : ''),
+      deliveryEta: needsMedicine ? 'Pending Dispatch (20 min)' : undefined,
       images: images,
-      patientLocation: userLocation ? { ...userLocation, address: 'Current Location' } : undefined
+      patientLocation: userLocation 
+        ? { ...userLocation, address: detectedAddress } 
+        : { lat: 26.5786, lng: 74.8698, address: detectedAddress }
     };
 
     onSubmitCase(newCase);
@@ -1350,6 +1370,17 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
               <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
               <span className="text-[10px] text-slate-400 font-medium">System Processing...</span>
             </div>
+          </div>
+        )}
+        {messages.length >= 2 && !isLoading && (
+          <div className="flex justify-center my-3 animate-in fade-in zoom-in-95">
+            <button
+              onClick={() => analyzeAndTriage()}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-full text-xs font-bold shadow-lg shadow-emerald-600/25 transition active:scale-95 border border-emerald-500/30"
+            >
+              <CheckCircle size={15} />
+              Finish & Send Case to Doctor's Queue
+            </button>
           </div>
         )}
         <div ref={messagesEndRef} />

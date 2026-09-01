@@ -18,13 +18,54 @@ function App() {
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [aiConfig, setAiConfig] = useState(getAIConfig());
 
-  // Existing States (Strict Freeze)
-  const [cases, setCases] = useState<MedicalCase[]>(MOCK_CASES);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  // Persistent States across sessions & tabs
+  const [cases, setCases] = useState<MedicalCase[]>(() => {
+    try {
+      const saved = localStorage.getItem('ai_upchaar_cases');
+      return saved ? JSON.parse(saved) : MOCK_CASES;
+    } catch (e) {
+      return MOCK_CASES;
+    }
+  });
+
+  const [appointments, setAppointments] = useState<Appointment[]>(() => {
+    try {
+      const saved = localStorage.getItem('ai_upchaar_appointments');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   const [stats, setStats] = useState(MOCK_STATS);
 
-  // 🧾 NEW OFFLINE STORAGE (Isolated) - Added typing with OfflineSession
-  const [offlineSessions, setOfflineSessions] = useState<OfflineSession[]>([]);
+  const [offlineSessions, setOfflineSessions] = useState<OfflineSession[]>(() => {
+    try {
+      const saved = localStorage.getItem('ai_upchaar_offline_sessions');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Sync to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('ai_upchaar_cases', JSON.stringify(cases));
+    } catch (e) {}
+  }, [cases]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ai_upchaar_appointments', JSON.stringify(appointments));
+    } catch (e) {}
+  }, [appointments]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ai_upchaar_offline_sessions', JSON.stringify(offlineSessions));
+    } catch (e) {}
+  }, [offlineSessions]);
 
   // Check for existing session on app start
   useEffect(() => {
