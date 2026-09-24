@@ -637,137 +637,244 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   };
 
   const renderHome = () => (
-    <div className="flex flex-col h-full bg-slate-50 p-3 sm:p-6 overflow-y-auto overflow-x-hidden">
-      <div className="mb-6 text-center flex flex-col items-center animate-in fade-in slide-in-from-top-4 duration-500">
-        <Logo className="w-12 h-12 text-emerald-600 mb-3" />
-        <h1 className="text-2xl font-bold text-slate-800">Namaste, {user.name}</h1>
-        <p className="text-slate-500 font-medium">Healthcare for Every Village</p>
+    <div className="flex flex-col h-full bg-slate-50 p-4 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden">
+      {/* Welcome Hero Banner */}
+      <div className="mb-6 md:mb-8 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 rounded-2xl md:rounded-3xl p-5 md:p-8 text-white shadow-lg shadow-emerald-700/10 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden shrink-0">
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="w-12 h-12 md:w-16 md:h-16 bg-white/15 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shrink-0 border border-white/20">
+            <Logo className="w-7 h-7 md:w-10 md:h-10 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/20 text-emerald-100 backdrop-blur-sm">
+                Rural Health Access
+              </span>
+              <span className="text-[10px] md:text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200">
+                AI Triage 24/7
+              </span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mt-1 text-white">
+              Namaste, {user.name}
+            </h1>
+            <p className="text-emerald-100 text-xs md:text-sm mt-0.5">
+              Healthcare for Every Village • Instant AI Doctor & Village Clinic Network
+            </p>
+          </div>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-2 self-start md:self-auto">
+          <div className="px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold flex items-center gap-2 text-white">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse"></span>
+            <span>Online Clinic Support</span>
+          </div>
+        </div>
+
+        {/* Decorative circular blur in background */}
+        <div className="absolute -right-8 -bottom-10 w-44 h-44 rounded-full bg-white/5 pointer-events-none"></div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
+      {/* Primary 4 Actions - Responsive 4 Columns on Laptop/Desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-8 shrink-0">
         <button
           onClick={() => { initChat(false); setCurrentView('CONSULT_CHAT'); }}
-          className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-1.5 sm:gap-2 hover:border-emerald-500 hover:shadow-md transition group animate-in zoom-in-95 fade-in duration-300"
+          className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center sm:items-start text-center sm:text-left gap-3 hover:border-emerald-500 hover:shadow-lg hover:-translate-y-0.5 transition-all group animate-in zoom-in-95 fade-in duration-300"
           style={{ animationDelay: '75ms', animationFillMode: 'both' }}
         >
-          <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 group-hover:scale-110 transition">
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
             <MessageSquare size={24} />
           </div>
-          <span className="font-semibold text-slate-800 text-[11.5px] sm:text-sm">Chat AI</span>
+          <div>
+            <span className="font-bold text-slate-800 text-sm sm:text-base block">Chat AI</span>
+            <span className="text-xs text-slate-400 hidden sm:block mt-0.5">Clinical symptom check</span>
+          </div>
         </button>
+
         <button
           onClick={() => { initChat(true); setCurrentView('CONSULT_VOICE'); }}
-          className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-1.5 sm:gap-2 hover:border-blue-500 hover:shadow-md transition group animate-in zoom-in-95 fade-in duration-300"
+          className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center sm:items-start text-center sm:text-left gap-3 hover:border-blue-500 hover:shadow-lg hover:-translate-y-0.5 transition-all group animate-in zoom-in-95 fade-in duration-300"
           style={{ animationDelay: '150ms', animationFillMode: 'both' }}
         >
-          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition">
+          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
             <Mic size={24} />
           </div>
-          <span className="font-semibold text-slate-800 text-[11.5px] sm:text-sm">Voice AI</span>
+          <div>
+            <span className="font-bold text-slate-800 text-sm sm:text-base block">Voice AI</span>
+            <span className="text-xs text-slate-400 hidden sm:block mt-0.5">Speak in Hindi / Regional</span>
+          </div>
         </button>
+
         <button
           onClick={() => setCurrentView('LOCATE_NEARBY')}
-          className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-1.5 sm:gap-2 hover:border-amber-500 hover:shadow-md transition group animate-in zoom-in-95 fade-in duration-300"
+          className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center sm:items-start text-center sm:text-left gap-3 hover:border-amber-500 hover:shadow-lg hover:-translate-y-0.5 transition-all group animate-in zoom-in-95 fade-in duration-300"
           style={{ animationDelay: '225ms', animationFillMode: 'both' }}
         >
-          <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 group-hover:scale-110 transition">
+          <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm">
             <MapPin size={24} />
           </div>
-          <span className="font-semibold text-slate-800 text-[11.5px] sm:text-sm">Nearby Help</span>
+          <div>
+            <span className="font-bold text-slate-800 text-sm sm:text-base block">Nearby Help</span>
+            <span className="text-xs text-slate-400 hidden sm:block mt-0.5">Find clinics & hospitals</span>
+          </div>
         </button>
+
         <button
           onClick={() => {
             setSelectedHospital(null);
             setCurrentView('BOOK_APPOINTMENT');
           }}
-          className="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center gap-1.5 sm:gap-2 hover:border-purple-500 hover:shadow-md transition group animate-in zoom-in-95 fade-in duration-300"
+          className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col items-center sm:items-start text-center sm:text-left gap-3 hover:border-purple-500 hover:shadow-lg hover:-translate-y-0.5 transition-all group animate-in zoom-in-95 fade-in duration-300"
           style={{ animationDelay: '300ms', animationFillMode: 'both' }}
         >
-          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 group-hover:scale-110 transition">
+          <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
             <Calendar size={24} />
           </div>
-          <span className="font-semibold text-slate-800 text-[11.5px] sm:text-sm">Book Appt</span>
+          <div>
+            <span className="font-bold text-slate-800 text-sm sm:text-base block">Book Appt</span>
+            <span className="text-xs text-slate-400 hidden sm:block mt-0.5">Consult rural specialists</span>
+          </div>
         </button>
       </div>
 
-      <div className="mb-6">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1 animate-in fade-in duration-300" style={{ animationDelay: '375ms', animationFillMode: 'both' }}>Wellness & Support</h3>
-        <div className="space-y-3">
-          <button
-            onClick={() => setCurrentView('HOME_REMEDIES')}
-            className="w-full bg-amber-50 border border-amber-100 p-3 sm:p-4 rounded-2xl flex items-center gap-3 sm:gap-4 hover:bg-amber-100 transition group text-left animate-in slide-in-from-right-4 fade-in duration-500"
-            style={{ animationDelay: '450ms', animationFillMode: 'both' }}
-          >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-600 shadow-sm group-hover:scale-110 transition shrink-0">
-              <Leaf size={20} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm leading-tight">Seasonal Home Remedies</h4>
-              <p className="text-[9px] sm:text-xs text-slate-500 truncate leading-tight mt-0.5">Doctor-verified natural care</p>
-            </div>
-            <div className="p-1 bg-white rounded-full shadow-sm shrink-0">
-              {getSeasonIcon(currentSeason)}
-            </div>
-          </button>
+      {/* Two-Column Responsive Split on Desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        {/* Left Side: Wellness & Preventive Healthcare (7 cols) */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="flex items-center justify-between ml-1">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <Leaf size={14} className="text-emerald-600" />
+              Wellness & Support
+            </h3>
+            <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+              Ayurvedic & Lifestyle Guidance
+            </span>
+          </div>
 
-          <button
-            onClick={() => setCurrentView('WELLNESS_HUB')}
-            className="w-full bg-emerald-50 border border-emerald-100 p-3 sm:p-4 rounded-2xl flex items-center gap-3 sm:gap-4 hover:bg-emerald-100 transition group text-left animate-in slide-in-from-right-4 fade-in duration-500"
-            style={{ animationDelay: '525ms', animationFillMode: 'both' }}
-          >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 transition shrink-0">
-              <Zap size={20} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm leading-tight">Yoga & Immunity</h4>
-              <p className="text-[9px] sm:text-xs text-slate-500 truncate leading-tight mt-0.5">Guided exercises for strength</p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setCurrentView('DOCTOR_TIPS')}
-            className="w-full bg-blue-50 border border-blue-100 p-3 sm:p-4 rounded-2xl flex items-center gap-3 sm:gap-4 hover:bg-blue-100 transition group text-left animate-in slide-in-from-right-4 fade-in duration-500"
-            style={{ animationDelay: '600ms', animationFillMode: 'both' }}
-          >
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-110 transition shrink-0">
-              <Heart size={20} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm leading-tight">Doctor's Daily Tips</h4>
-              <p className="text-[9px] sm:text-xs text-slate-500 truncate leading-tight mt-0.5">Professional lifestyle advice</p>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '675ms', animationFillMode: 'both' }}>
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-semibold text-slate-700 flex items-center gap-2 text-sm"><History size={16} /> Recent Activity</h3>
-          <button onClick={() => setCurrentView('HISTORY')} className="text-xs text-emerald-600 font-medium">View All</button>
-        </div>
-        <div className="p-4 overflow-y-auto flex-1 space-y-3">
-          {appointments.slice(0, 1).map(apt => (
-            <div key={apt.id} className="p-3 bg-purple-50 rounded-lg border border-purple-100">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-bold text-purple-700">UPCOMING APPOINTMENT</span>
-                <span className="text-xs text-purple-600">{new Date(apt.date).toLocaleDateString()}</span>
+          <div className="space-y-3">
+            <button
+              onClick={() => setCurrentView('HOME_REMEDIES')}
+              className="w-full bg-white border border-slate-200 p-4 rounded-2xl flex items-center gap-4 hover:border-amber-400 hover:shadow-md transition-all group text-left animate-in slide-in-from-right-4 fade-in duration-500"
+              style={{ animationDelay: '450ms', animationFillMode: 'both' }}
+            >
+              <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 group-hover:scale-110 transition shrink-0">
+                <Leaf size={22} />
               </div>
-              <p className="text-sm font-medium text-slate-800">{apt.doctorName}</p>
-            </div>
-          ))}
-          {patientHistory.slice(0, 2).map(c => (
-            <div key={c.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium text-slate-800">{c.aiDiagnosis || 'Symptom Check'}</p>
-                <p className="text-xs text-slate-500">{new Date(c.timestamp).toLocaleDateString()}</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-bold text-slate-800 text-sm sm:text-base group-hover:text-amber-700 transition">
+                    Seasonal Home Remedies
+                  </h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full border border-amber-200">
+                    {currentSeason}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 truncate mt-0.5">
+                  Doctor-verified natural care & herbs for local ailments
+                </p>
               </div>
-              <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${c.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'
-                }`}>
-                {c.status.replace('_', ' ')}
+              <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-amber-100 transition shrink-0">
+                {getSeasonIcon(currentSeason)}
+              </div>
+            </button>
+
+            <button
+              onClick={() => setCurrentView('WELLNESS_HUB')}
+              className="w-full bg-white border border-slate-200 p-4 rounded-2xl flex items-center gap-4 hover:border-emerald-400 hover:shadow-md transition-all group text-left animate-in slide-in-from-right-4 fade-in duration-500"
+              style={{ animationDelay: '525ms', animationFillMode: 'both' }}
+            >
+              <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition shrink-0">
+                <Zap size={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-slate-800 text-sm sm:text-base group-hover:text-emerald-700 transition">
+                  Yoga & Immunity Routines
+                </h4>
+                <p className="text-xs text-slate-500 truncate mt-0.5">
+                  Guided pranayama and strength exercises for rural wellness
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-emerald-600 px-3 py-1 bg-emerald-50 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition">
+                Start
               </span>
+            </button>
+
+            <button
+              onClick={() => setCurrentView('DOCTOR_TIPS')}
+              className="w-full bg-white border border-slate-200 p-4 rounded-2xl flex items-center gap-4 hover:border-blue-400 hover:shadow-md transition-all group text-left animate-in slide-in-from-right-4 fade-in duration-500"
+              style={{ animationDelay: '600ms', animationFillMode: 'both' }}
+            >
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition shrink-0">
+                <Heart size={22} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-slate-800 text-sm sm:text-base group-hover:text-blue-700 transition">
+                  Doctor's Daily Health Tips
+                </h4>
+                <p className="text-xs text-slate-500 truncate mt-0.5">
+                  Professional hygiene, nutrition, and lifestyle advice
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-blue-600 px-3 py-1 bg-blue-50 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition">
+                Read
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Right Side: Recent Activity & Health Record (5 cols) */}
+        <div className="lg:col-span-5 flex flex-col">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/70">
+              <h3 className="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                <History size={16} className="text-emerald-600" />
+                Recent Health Activity
+              </h3>
+              <button
+                onClick={() => setCurrentView('HISTORY')}
+                className="text-xs text-emerald-600 hover:text-emerald-700 font-bold transition"
+              >
+                View Full Log
+              </button>
             </div>
-          ))}
-          {patientHistory.length === 0 && appointments.length === 0 && <p className="text-center text-slate-400 text-sm py-4">No recent activity.</p>}
+
+            <div className="p-4 overflow-y-auto flex-1 space-y-3">
+              {appointments.slice(0, 2).map(apt => (
+                <div key={apt.id} className="p-3.5 bg-purple-50/70 rounded-xl border border-purple-100">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider bg-purple-100 px-2 py-0.5 rounded-full">
+                      Upcoming Appointment
+                    </span>
+                    <span className="text-xs text-purple-600 font-medium">
+                      {new Date(apt.date).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 mt-1">{apt.doctorName}</p>
+                  <p className="text-xs text-slate-500">{apt.reason || 'General Consultation'}</p>
+                </div>
+              ))}
+
+              {patientHistory.slice(0, 3).map(c => (
+                <div key={c.id} className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-100 hover:border-slate-200 transition">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{c.aiDiagnosis || 'Symptom Triage'}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{new Date(c.timestamp).toLocaleDateString()}</p>
+                  </div>
+                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold ${
+                    c.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {c.status.replace('_', ' ')}
+                  </span>
+                </div>
+              ))}
+
+              {patientHistory.length === 0 && appointments.length === 0 && (
+                <div className="text-center py-8">
+                  <History className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-slate-600">No medical consultations yet</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Use Chat AI or Voice AI to start your first triage.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -812,42 +919,47 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           ))}
         </div>
 
-        {MOCK_REMEDIES.filter(r => {
-          if (remedySeasonFilter === 'ALL') return true;
-          if (remedySeasonFilter === 'AUTO') return r.season === currentSeason || r.season === Season.ALL;
-          return r.season === remedySeasonFilter || r.season === Season.ALL;
-        }).map((remedy, index) => (
-          <div
-            key={remedy.id}
-            onClick={() => setSelectedRemedy(remedy)}
-            className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-400 cursor-pointer transition group animate-in zoom-in-95 fade-in duration-300"
-            style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <h4 className="font-bold text-slate-800 group-hover:text-amber-700 transition">{remedy.title}</h4>
-              <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
-                <Star size={12} fill="currentColor" /> {remedy.rating}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {MOCK_REMEDIES.filter(r => {
+            if (remedySeasonFilter === 'ALL') return true;
+            if (remedySeasonFilter === 'AUTO') return r.season === currentSeason || r.season === Season.ALL;
+            return r.season === remedySeasonFilter || r.season === Season.ALL;
+          }).map((remedy, index) => (
+            <div
+              key={remedy.id}
+              onClick={() => setSelectedRemedy(remedy)}
+              className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-amber-400 cursor-pointer transition group animate-in zoom-in-95 fade-in duration-300 flex flex-col justify-between"
+              style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
+            >
+              <div>
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-bold text-slate-800 group-hover:text-amber-700 transition">{remedy.title}</h4>
+                  <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
+                    <Star size={12} fill="currentColor" /> {remedy.rating}
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mb-3">{remedy.ailment}</p>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+                <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-bold flex items-center gap-1">
+                  <ShieldCheck size={10} className="text-emerald-500" /> Verified by {remedy.doctorName}
+                </span>
+                <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">View Recipe →</span>
               </div>
             </div>
-            <p className="text-xs text-slate-500 mb-3">{remedy.ailment}</p>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-bold flex items-center gap-1">
-                <ShieldCheck size={10} className="text-emerald-500" /> Verified by {remedy.doctorName}
-              </span>
-              <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">View Recipe →</span>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {selectedRemedy && (
         <div className="absolute inset-0 bg-white z-[60] flex flex-col animate-in slide-in-from-right duration-300">
-          <div className="p-4 border-b flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="p-4 border-b flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500 bg-white">
             <button onClick={() => setSelectedRemedy(null)}><ArrowLeft size={24} className="text-slate-500" /></button>
             <h2 className="font-bold text-slate-800">Preparation Guide</h2>
             <div className="w-6"></div>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="max-w-3xl mx-auto w-full">
             <div className="bg-amber-50 rounded-3xl p-6 text-center mb-8">
               <Leaf className="w-12 h-12 text-amber-600 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-slate-800 mb-1">{selectedRemedy.title}</h3>
@@ -950,6 +1062,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </div>
       )}
@@ -987,40 +1100,43 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           ))}
         </div>
 
-        {MOCK_WELLNESS_ACTIVITIES.filter(act => {
-          if (wellnessCategoryFilter === 'ALL') return true;
-          if (wellnessCategoryFilter === 'ELDERLY') return act.ageGroup.toUpperCase().includes('SENIOR') || act.ageGroup.toUpperCase().includes('ALL') || act.level === 'BEGINNER';
-          if (wellnessCategoryFilter === 'ADULTS') return act.ageGroup.toUpperCase().includes('ADULT') || act.ageGroup.toUpperCase().includes('ALL');
-          return true;
-        }).map((activity, index) => (
-          <div
-            key={activity.id}
-            onClick={() => setSelectedActivity(activity)}
-            className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-400 cursor-pointer transition flex items-center gap-4 animate-in zoom-in-95 fade-in duration-300"
-            style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
-          >
-            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-emerald-600 flex-shrink-0">
-              {activity.type === 'BREATHING' ? <Volume2 className="rotate-90" /> : <Zap />}
-            </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-start">
-                <h4 className="font-bold text-slate-800 text-sm">{activity.title}</h4>
-                <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-bold uppercase">{activity.duration}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {MOCK_WELLNESS_ACTIVITIES.filter(act => {
+            if (wellnessCategoryFilter === 'ALL') return true;
+            if (wellnessCategoryFilter === 'ELDERLY') return act.ageGroup.toUpperCase().includes('SENIOR') || act.ageGroup.toUpperCase().includes('ALL') || act.level === 'BEGINNER';
+            if (wellnessCategoryFilter === 'ADULTS') return act.ageGroup.toUpperCase().includes('ADULT') || act.ageGroup.toUpperCase().includes('ALL');
+            return true;
+          }).map((activity, index) => (
+            <div
+              key={activity.id}
+              onClick={() => setSelectedActivity(activity)}
+              className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-emerald-400 cursor-pointer transition flex items-center gap-4 animate-in zoom-in-95 fade-in duration-300"
+              style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
+            >
+              <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-emerald-600 flex-shrink-0">
+                {activity.type === 'BREATHING' ? <Volume2 className="rotate-90" /> : <Zap />}
               </div>
-              <p className="text-xs text-slate-500 line-clamp-1">{activity.benefit}</p>
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <h4 className="font-bold text-slate-800 text-sm">{activity.title}</h4>
+                  <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-bold uppercase">{activity.duration}</span>
+                </div>
+                <p className="text-xs text-slate-500 line-clamp-1">{activity.benefit}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {selectedActivity && (
         <div className="absolute inset-0 bg-white z-[60] flex flex-col animate-in slide-in-from-right duration-300">
-          <div className="p-4 border-b flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="p-4 border-b flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500 bg-white">
             <button onClick={() => setSelectedActivity(null)}><ArrowLeft size={24} className="text-slate-500" /></button>
             <h2 className="font-bold text-slate-800">Activity Guide</h2>
             <div className="w-6"></div>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="max-w-3xl mx-auto w-full">
             <div className="bg-emerald-50 rounded-3xl p-6 text-center mb-8">
               <Zap className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-slate-800 mb-1">{selectedActivity.title}</h3>
@@ -1080,6 +1196,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 )}
                 <p className="text-center text-[10px] text-slate-400 mt-4 italic px-4">Stop immediately if you feel any pain or dizziness.</p>
               </div>
+            </div>
             </div>
           </div>
         </div>
@@ -1295,10 +1412,11 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           <p className="text-xs text-blue-700 font-medium leading-relaxed">Trusted advice from our rural healthcare network. Tips are updated daily based on local health conditions.</p>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {MOCK_HEALTH_TIPS.map((tip, index) => (
           <div
             key={tip.id}
-            className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group animate-in zoom-in-95 fade-in duration-300"
+            className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 group animate-in zoom-in-95 fade-in duration-300 flex flex-col justify-between"
             style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -1409,6 +1527,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             </div>
           </div>
         ))}
+        </div>
       </div>
       {renderCommentsSheet()}
       {renderExpandedEmojiSheet()}
@@ -1439,7 +1558,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-w-4xl w-full mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl p-3.5 text-sm shadow-sm whitespace-pre-line group relative ${
@@ -1507,7 +1626,8 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-3 bg-white border-t border-slate-200 shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="p-3 sm:p-4 bg-white border-t border-slate-200 shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-4xl mx-auto w-full">
         {currentView === 'CONSULT_VOICE' ? (
           <div className="flex flex-col items-center gap-3 py-3">
             {/* MULTILINGUAL LANGUAGE SELECTION PILLS */}
@@ -1623,6 +1743,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
@@ -1633,7 +1754,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
     return (
       <div className="flex flex-col h-full bg-slate-50 overflow-y-auto animate-in slide-in-from-bottom-8 duration-700">
-        <div className="p-6">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-2xl w-full mx-auto">
           <div className={`p-6 rounded-2xl shadow-sm border mb-6 text-center ${isSerious ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'
             }`}>
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isSerious ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'
@@ -1726,9 +1847,9 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       <div className="flex-1 flex flex-col relative overflow-hidden">
         <div ref={mapContainerRef} className="absolute inset-0 z-0"></div>
 
-        <div className="z-10 p-3 sm:p-4 h-full flex flex-col pointer-events-none">
+        <div className="z-10 p-3 sm:p-4 h-full flex flex-col pointer-events-none md:w-[460px]">
           {/* SEARCH & GPS CONTROL BAR */}
-          <div className="space-y-2 pointer-events-auto mb-auto animate-in zoom-in-95 fade-in duration-500">
+          <div className="space-y-2 pointer-events-auto mb-2 md:mb-3 animate-in zoom-in-95 fade-in duration-500">
             <div className="bg-white/95 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-1.5">
               <button
                 onClick={detectLocation}
@@ -1788,7 +1909,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
           {nearbyHospitals.length > 0 && (
             <div
-              className="bg-white rounded-t-3xl shadow-[0_-10px_30px_-5px_rgba(0,0,0,0.15)] max-h-[65%] overflow-hidden flex flex-col pointer-events-auto -mx-3 sm:-mx-4 animate-in slide-in-from-bottom-8 fade-in duration-500 border-t border-slate-200"
+              className="bg-white rounded-t-3xl md:rounded-2xl shadow-[0_-10px_30px_-5px_rgba(0,0,0,0.15)] md:shadow-2xl max-h-[65%] md:max-h-[calc(100%-140px)] overflow-hidden flex flex-col pointer-events-auto -mx-3 sm:-mx-4 md:mx-0 animate-in slide-in-from-bottom-8 md:slide-in-from-left-4 fade-in duration-500 border border-slate-200"
             >
               {/* DRAWER HEADER & CATEGORY TABS */}
               <div className="p-3 sm:p-4 border-b border-slate-100 bg-white sticky top-0 z-10 space-y-2.5">
@@ -1981,7 +2102,8 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         <h2 className="font-bold text-slate-800">Book Appointment</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="max-w-2xl mx-auto w-full">
         <div className="mb-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '75ms', animationFillMode: 'both' }}>
           <h3 className="text-sm font-bold text-slate-500 uppercase mb-2">Hospital / Clinic</h3>
           <p className="text-lg font-bold text-slate-800">{selectedHospital ? selectedHospital.name : 'Online Consultation'}</p>
@@ -2083,6 +2205,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             )}
           </button>
         </div>
+        </div>
       </div>
     </div>
   );
@@ -2093,7 +2216,8 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         <button onClick={() => setCurrentView('HOME')}><ArrowLeft size={24} className="text-slate-500" /></button>
         <h2 className="font-bold text-slate-800">My Medical History</h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className="max-w-4xl mx-auto w-full space-y-6">
 
         {appointments.length > 0 && (
           <div>
@@ -2146,6 +2270,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
               <div className="text-center text-slate-400 py-8 italic bg-slate-100 rounded-xl border border-dashed border-slate-300">No past consultations found.</div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -2201,38 +2326,40 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   );
 
   return (
-    <div className="h-[calc(100vh-64px)] md:h-[800px] max-w-md mx-auto bg-white shadow-2xl md:rounded-2xl md:my-4 overflow-hidden border border-slate-200 relative">
-      <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-blue-500 w-full"></div>
+    <div className="h-full w-full flex flex-col items-center justify-center p-0 md:p-3 bg-slate-100/60 overflow-hidden">
+      <div className="h-full w-full max-w-7xl bg-white shadow-xl md:rounded-2xl overflow-hidden border-0 md:border md:border-slate-200/80 relative flex flex-col">
+        <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-blue-500 w-full shrink-0"></div>
 
-      {currentView === 'HOME' && renderHome()}
-      {(currentView === 'CONSULT_CHAT' || currentView === 'CONSULT_VOICE') && renderConsultation()}
-      {currentView === 'TRIAGE_RESULT' && renderTriageResult()}
-      {currentView === 'BOOK_APPOINTMENT' && renderBooking()}
-      {currentView === 'LOCATE_NEARBY' && renderLocateNearby()}
-      {currentView === 'DOCTOR_CONNECT' && (
-        <div className="flex flex-col h-full bg-slate-900 items-center justify-center text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-emerald-900/20 animate-pulse"></div>
-          <Video size={48} className="text-white z-10 animate-bounce" />
-          <p className="mt-4 font-bold text-lg z-10">Connecting to Doctor...</p>
-          <p className="text-xs text-white/60 uppercase tracking-widest mt-2">Critical Priority Escalation</p>
-        </div>
-      )}
-      {currentView === 'HISTORY' && renderHistory()}
-      {currentView === 'FEEDBACK' && renderFeedback()}
+        {currentView === 'HOME' && renderHome()}
+        {(currentView === 'CONSULT_CHAT' || currentView === 'CONSULT_VOICE') && renderConsultation()}
+        {currentView === 'TRIAGE_RESULT' && renderTriageResult()}
+        {currentView === 'BOOK_APPOINTMENT' && renderBooking()}
+        {currentView === 'LOCATE_NEARBY' && renderLocateNearby()}
+        {currentView === 'DOCTOR_CONNECT' && (
+          <div className="flex flex-col h-full bg-slate-900 items-center justify-center text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-emerald-900/20 animate-pulse"></div>
+            <Video size={48} className="text-white z-10 animate-bounce" />
+            <p className="mt-4 font-bold text-lg z-10">Connecting to Doctor...</p>
+            <p className="text-xs text-white/60 uppercase tracking-widest mt-2">Critical Priority Escalation</p>
+          </div>
+        )}
+        {currentView === 'HISTORY' && renderHistory()}
+        {currentView === 'FEEDBACK' && renderFeedback()}
 
-      {currentView === 'HOME_REMEDIES' && renderHomeRemedies()}
-      {currentView === 'WELLNESS_HUB' && renderWellnessHub()}
-      {currentView === 'DOCTOR_TIPS' && renderDoctorTips()}
+        {currentView === 'HOME_REMEDIES' && renderHomeRemedies()}
+        {currentView === 'WELLNESS_HUB' && renderWellnessHub()}
+        {currentView === 'DOCTOR_TIPS' && renderDoctorTips()}
 
-      {currentView === 'HOME' && (
-        <div className="absolute top-4 right-4">
-          <button onClick={onLogout} className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-600 transition">
-            <LogOut size={18} />
-          </button>
-        </div>
-      )}
+        {currentView === 'HOME' && (
+          <div className="absolute top-4 right-4 md:hidden">
+            <button onClick={onLogout} className="p-2 bg-slate-100 rounded-full hover:bg-red-50 hover:text-red-600 transition">
+              <LogOut size={18} />
+            </button>
+          </div>
+        )}
 
-      <div className="hidden"><Truck /><UserPlus /></div>
+        <div className="hidden"><Truck /><UserPlus /></div>
+      </div>
     </div>
   );
 };
