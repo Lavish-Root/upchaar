@@ -223,7 +223,7 @@ export const MOCK_CASES: MedicalCase[] = [
       address: 'Plot 1-23, Bafno ka Mohalla, Kishangarh, Ajmer, Rajasthan'
     },
     transcript: [
-      { id: '1', role: 'model', text: 'Namaste, main AI Upchaar hoon. Bataiye, aapko kya takleef hai?', timestamp: new Date() },
+      { id: '1', role: 'model', text: 'Namaste, main PraanSeva hoon. Bataiye, aapko kya takleef hai?', timestamp: new Date() },
       { id: '2', role: 'user', text: 'Namaste doctor sahab, mujhe 2 din se tez bukhar aur khansi hai', timestamp: new Date() },
       { id: '3', role: 'model', text: 'Kya aap apna bukhar ka temperature (°C) bata sakte hain?', timestamp: new Date() },
       { id: '4', role: 'user', text: '50', timestamp: new Date() },

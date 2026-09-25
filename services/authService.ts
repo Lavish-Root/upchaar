@@ -1,6 +1,6 @@
 import { User, UserRole } from '../types';
 
-const SESSION_KEY = 'ai_upchaar_session';
+const SESSION_KEY = 'praanseva_session';
 
 // Mock database of doctors
 const MOCK_DOCTORS = [
@@ -80,7 +80,7 @@ export const saveSession = (user: User) => {
 
 export const getSession = (): User | null => {
   try {
-    const session = localStorage.getItem(SESSION_KEY);
+    const session = localStorage.getItem(SESSION_KEY) || localStorage.getItem('ai_upchaar_session');
     if (!session) return null;
     return JSON.parse(session);
   } catch (e) {

@@ -50,25 +50,50 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl flex overflow-hidden border border-slate-200 min-h-[600px]">
 
         {/* Left Side - Visual & Info */}
-        <div className={`hidden md:flex w-1/2 p-10 flex-col justify-between text-white transition-colors duration-500 animate-in fade-in slide-in-from-bottom-8 ${activeRole === UserRole.DOCTOR ? 'bg-slate-900' : 'bg-emerald-600'}`}>
+        <div className={`hidden md:flex w-1/2 p-10 flex-col justify-between text-white transition-colors duration-500 animate-in fade-in slide-in-from-bottom-8 ${activeRole === UserRole.DOCTOR ? 'bg-slate-900' : 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800'}`}>
           <div>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg">
-                <Logo className="w-8 h-8" />
+            <div className="flex items-center gap-3.5 mb-6">
+              <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg p-1.5 overflow-hidden">
+                <Logo useImage className="w-full h-full rounded-xl" />
               </div>
               <div className="flex flex-col">
-                <span className="text-3xl font-bold tracking-tight">AI Upchaar</span>
-                <span className="text-xs font-medium text-white/70 tracking-widest uppercase">Rural Healthcare Access</span>
+                <span className="text-3xl font-extrabold tracking-tight">PraanSeva<span className="text-xs align-super font-normal ml-0.5">™</span></span>
+                <span className="text-xs font-semibold text-emerald-200 tracking-wider uppercase">Care Today. Healthier Tomorrows.</span>
               </div>
             </div>
-            <h1 className="text-4xl font-bold mb-6 leading-tight">
+            
+            <div className="inline-block px-3 py-1 bg-white/15 backdrop-blur-sm rounded-full text-xs font-bold text-white mb-6 tracking-wide border border-white/20">
+              AI • ACCESS • AFFORDABLE • FOR EVERYONE
+            </div>
+
+            <h1 className="text-3xl lg:text-4xl font-extrabold mb-4 leading-tight">
               {activeRole === UserRole.DOCTOR ? 'Doctor Portal' : 'Healthcare for Every Village'}
             </h1>
-            <p className="text-white/80 text-lg leading-relaxed">
+            <p className="text-white/85 text-base leading-relaxed mb-6">
               {activeRole === UserRole.DOCTOR
-                ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your expertise, amplified by AI.'
-                : 'Connect with a digital health assistant instantly. No appointments needed. Consult in Hindi, Punjabi, or English.'}
+                ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your clinical expertise, amplified by PraanSeva AI.'
+                : 'Connect with a digital health assistant instantly. No appointments needed. Consult in Hindi, Punjabi, Bengali, Gujarati, Marathi, Tamil, Telugu, or English.'}
             </p>
+
+            {/* 4 Pillars Grid from Brand Identity */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold">👥</div>
+                <div className="text-xs font-bold leading-tight">People<br/><span className="font-normal text-white/70">First</span></div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold">🧠</div>
+                <div className="text-xs font-bold leading-tight">Technology<br/><span className="font-normal text-white/70">For Good</span></div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold">❤️</div>
+                <div className="text-xs font-bold leading-tight">Healthier<br/><span className="font-normal text-white/70">Communities</span></div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold">🌱</div>
+                <div className="text-xs font-bold leading-tight">A Brighter<br/><span className="font-normal text-white/70">Tomorrow</span></div>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -93,11 +118,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative">
 
           {/* Mobile Header */}
-          <div className="md:hidden flex items-center gap-3 mb-8 text-slate-800 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-md">
-              <Logo className="w-6 h-6" />
+          <div className="md:hidden flex items-center gap-3 mb-6 text-slate-800 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md border border-slate-200 p-1">
+              <Logo useImage className="w-full h-full rounded-lg" />
             </div>
-            <span className="font-bold text-xl tracking-tight">AI Upchaar</span>
+            <div>
+              <span className="font-extrabold text-2xl tracking-tight text-slate-800 leading-none block">PraanSeva</span>
+              <span className="text-[10px] font-semibold text-emerald-600 tracking-wider uppercase">Care Today. Healthier Tomorrows.</span>
+            </div>
           </div>
 
           <div className="flex justify-center mb-10 bg-slate-100 p-1.5 rounded-full w-full max-w-xs mx-auto animate-in fade-in slide-in-from-top-4 duration-500">

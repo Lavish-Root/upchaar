@@ -1,7 +1,7 @@
 {
-  "name": "ai-upchaar-server",
+  "name": "praanseva-server",
   "version": "1.0.0",
-  "description": "Backend API Server for AI Upchaar Telemedicine",
+  "description": "Backend API Server for PraanSeva Telemedicine",
   "main": "index.js",
   "type": "module",
   "scripts": {

@@ -34,7 +34,7 @@ function App() {
   // Persistent States across sessions & tabs
   const [cases, setCases] = useState<MedicalCase[]>(() => {
     try {
-      const saved = localStorage.getItem('ai_upchaar_cases');
+      const saved = localStorage.getItem('praanseva_cases') || localStorage.getItem('ai_upchaar_cases');
       if (saved) {
         const parsed = JSON.parse(saved);
         return mergeCasesWithMocks(parsed);
@@ -47,7 +47,7 @@ function App() {
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
     try {
-      const saved = localStorage.getItem('ai_upchaar_appointments');
+      const saved = localStorage.getItem('praanseva_appointments') || localStorage.getItem('ai_upchaar_appointments');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
@@ -58,7 +58,7 @@ function App() {
 
   const [offlineSessions, setOfflineSessions] = useState<OfflineSession[]>(() => {
     try {
-      const saved = localStorage.getItem('ai_upchaar_offline_sessions');
+      const saved = localStorage.getItem('praanseva_offline_sessions') || localStorage.getItem('ai_upchaar_offline_sessions');
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       return [];
@@ -68,19 +68,19 @@ function App() {
   // Sync to localStorage
   useEffect(() => {
     try {
-      localStorage.setItem('ai_upchaar_cases', JSON.stringify(cases));
+      localStorage.setItem('praanseva_cases', JSON.stringify(cases));
     } catch (e) {}
   }, [cases]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('ai_upchaar_appointments', JSON.stringify(appointments));
+      localStorage.setItem('praanseva_appointments', JSON.stringify(appointments));
     } catch (e) {}
   }, [appointments]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('ai_upchaar_offline_sessions', JSON.stringify(offlineSessions));
+      localStorage.setItem('praanseva_offline_sessions', JSON.stringify(offlineSessions));
     } catch (e) {}
   }, [offlineSessions]);
 
@@ -173,7 +173,7 @@ function App() {
           <Logo className="w-12 h-12" />
         </div>
         <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
-        <p className="text-slate-500 mt-4 text-sm font-medium tracking-wide uppercase">Initializing AI Upchaar...</p>
+        <p className="text-slate-500 mt-4 text-sm font-medium tracking-wide uppercase">Initializing PraanSeva...</p>
       </div>
     );
   }
@@ -197,8 +197,8 @@ function App() {
                   <Logo className="w-5 h-5 sm:w-6 sm:h-6" />
                 </div>
                 <div className="flex flex-col items-start">
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 leading-none">AI Upchaar</span>
-                  <span className="text-[9px] sm:text-[10px] font-medium text-emerald-600 tracking-wider uppercase">Healthcare Access</span>
+                  <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 leading-none">PraanSeva</span>
+                  <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-600 tracking-wider uppercase">Care Today. Healthier Tomorrows.</span>
                 </div>
               </button>
 
