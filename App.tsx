@@ -6,6 +6,7 @@ import IVRSimulator from './components/IVRSimulator';
 import LoginScreen from './components/LoginScreen';
 import ApiKeyModal from './components/ApiKeyModal';
 import Logo from './components/Logo';
+import LoadingAnimation from './components/LoadingAnimation';
 import { MOCK_CASES, MOCK_STATS, MOCK_PATIENTS } from './services/mockData';
 import { MedicalCase, CaseStatus, User, UserRole, Appointment, OfflineSession } from './types';
 import { logout, getSession } from './services/authService';
@@ -168,12 +169,17 @@ function App() {
 
   if (isAppLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center p-3 mb-6 shadow-xl border border-slate-100 animate-pulse ring-4 ring-emerald-100">
-          <Logo className="w-full h-full" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/20 to-teal-50/30 flex flex-col items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 flex flex-col items-center max-w-sm w-full animate-in fade-in zoom-in-95 duration-500">
+          <div className="h-16 flex items-center justify-center mb-4">
+            <Logo variant="full" className="h-14 w-auto" />
+          </div>
+          <LoadingAnimation
+            size="lg"
+            message="Initializing PraanSeva..."
+            submessage="Care Today. Healthier Tomorrows."
+          />
         </div>
-        <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
-        <p className="text-slate-600 mt-4 text-sm font-semibold tracking-wider uppercase">Initializing PraanSeva...</p>
       </div>
     );
   }
