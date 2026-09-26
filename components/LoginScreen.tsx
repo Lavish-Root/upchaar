@@ -56,9 +56,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
               AI • ACCESS • AFFORDABLE • FOR EVERYONE
             </div>
 
-            <h1 className="text-3xl lg:text-4xl font-extrabold mb-4 leading-tight">
-              {activeRole === UserRole.DOCTOR ? 'Doctor Portal' : 'Healthcare for Every Village'}
+            <h1 className="text-3xl lg:text-4xl font-extrabold mb-2 leading-tight">
+              {activeRole === UserRole.DOCTOR ? 'Doctor Portal' : 'Patient Portal'}
             </h1>
+            <p className="text-emerald-200 text-sm font-semibold tracking-wide uppercase mb-4">
+              {activeRole === UserRole.DOCTOR ? 'Healthcare Professional Access' : 'Healthcare for Every Village'}
+            </p>
             <p className="text-white/85 text-base leading-relaxed mb-6">
               {activeRole === UserRole.DOCTOR
                 ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your clinical expertise, amplified by PraanSeva AI.'
