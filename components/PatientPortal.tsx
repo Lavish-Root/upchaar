@@ -14,7 +14,6 @@ import { UniversalChatSession } from '../services/aiService';
 import { playRealisticVoice, stopRealisticVoice, setVoiceStateListener } from '../services/voiceService';
 import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
 import Logo from './Logo';
-import LoadingAnimation from './LoadingAnimation';
 
 // Declare Leaflet global for TypeScript
 declare const L: any;
@@ -1606,13 +1605,10 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           </div>
         ))}
         {isLoading && (
-          <div className="flex justify-start animate-in fade-in duration-300">
-            <div className="bg-white border border-emerald-100 p-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2.5">
-              <LoadingAnimation size="xs" className="w-6 h-6 shrink-0" />
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-bold text-emerald-800 leading-tight">PraanSeva AI Thinking...</span>
-                <span className="text-[10px] text-slate-400 font-medium">Analyzing symptoms & preparing clinical guidance</span>
-              </div>
+          <div className="flex justify-start">
+            <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2">
+              <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+              <span className="text-[10px] text-slate-400 font-medium">System Processing...</span>
             </div>
           </div>
         )}
