@@ -262,7 +262,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const initChat = (speak: boolean = false) => {
     setChatSession(startNewChat());
-    const greetingText = "Namaste, main AI Upchaar hoon. Bataiye, aapko kya takleef hai? Aap kisi bhi bhasha mein bata sakte hain.";
+    const greetingText = "Namaste, main PraanSeva AI Doctor assistant hoon. Bataiye, aapko kya takleef hai? Aap kisi bhi bhasha mein bata sakte hain.";
 
     setMessages([{
       id: '1',
@@ -641,8 +641,8 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       {/* Welcome Hero Banner */}
       <div className="mb-6 md:mb-8 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 rounded-2xl md:rounded-3xl p-5 md:p-8 text-white shadow-lg shadow-emerald-700/10 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500 relative overflow-hidden shrink-0">
         <div className="relative z-10 flex items-center gap-4">
-          <div className="w-12 h-12 md:w-16 md:h-16 bg-white/15 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shrink-0 border border-white/20">
-            <Logo className="w-7 h-7 md:w-10 md:h-10 text-white" />
+          <div className="w-14 h-14 md:w-16 md:h-16 bg-white rounded-2xl flex items-center justify-center shrink-0 border border-white/30 shadow-md p-2">
+            <Logo className="w-full h-full" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -1542,8 +1542,8 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         </button>
         <div className="flex flex-col items-center">
           <div className="flex items-center gap-1.5">
-            <Logo className="w-4 h-4 text-emerald-600" />
-            <span className="font-bold text-slate-800 text-sm">AI Upchaar Assistant</span>
+            <Logo className="w-5 h-5" />
+            <span className="font-bold text-slate-800 text-sm">PraanSeva AI Assistant</span>
           </div>
           <span className="text-[10px] text-emerald-600 flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Language Adaptive

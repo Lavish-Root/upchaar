@@ -168,12 +168,12 @@ function App() {
 
   if (isAppLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-        <div className="w-20 h-20 bg-emerald-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-xl animate-pulse ring-4 ring-emerald-100">
-          <Logo className="w-12 h-12" />
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center p-3 mb-6 shadow-xl border border-slate-100 animate-pulse ring-4 ring-emerald-100">
+          <Logo className="w-full h-full" />
         </div>
         <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
-        <p className="text-slate-500 mt-4 text-sm font-medium tracking-wide uppercase">Initializing AI Upchaar...</p>
+        <p className="text-slate-600 mt-4 text-sm font-semibold tracking-wider uppercase">Initializing PraanSeva...</p>
       </div>
     );
   }
@@ -192,13 +192,18 @@ function App() {
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
-              <button onClick={() => { }} className="flex items-center gap-2 sm:gap-3 focus:outline-none">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-lg flex items-center justify-center text-white shadow-md">
-                  <Logo className="w-5 h-5 sm:w-6 sm:h-6" />
+              <button onClick={() => { }} className="flex items-center gap-2.5 sm:gap-3 focus:outline-none group">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-200/80 p-1 group-hover:border-emerald-300 transition">
+                  <Logo className="w-full h-full" />
                 </div>
-                <div className="flex flex-col items-start">
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-800 leading-none">AI Upchaar</span>
-                  <span className="text-[9px] sm:text-[10px] font-medium text-emerald-600 tracking-wider uppercase">Healthcare Access</span>
+                <div className="flex flex-col items-start leading-none text-left">
+                  <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+                    <span className="text-[#002D56]">Praan</span><span className="text-[#00875A]">Seva</span>
+                    <span className="text-[10px] align-super text-emerald-600 font-bold ml-0.5">™</span>
+                  </span>
+                  <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-700 tracking-wider uppercase mt-0.5">
+                    Care Today. Healthier Tomorrows.
+                  </span>
                 </div>
               </button>
 

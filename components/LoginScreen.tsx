@@ -50,28 +50,52 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl flex overflow-hidden border border-slate-200 min-h-[600px]">
 
         {/* Left Side - Visual & Info */}
-        <div className={`hidden md:flex w-1/2 p-10 flex-col justify-between text-white transition-colors duration-500 animate-in fade-in slide-in-from-bottom-8 ${activeRole === UserRole.DOCTOR ? 'bg-slate-900' : 'bg-emerald-600'}`}>
+        <div className={`hidden md:flex w-1/2 p-10 flex-col justify-between text-white transition-colors duration-500 animate-in fade-in slide-in-from-bottom-8 ${activeRole === UserRole.DOCTOR ? 'bg-slate-900' : 'bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900'}`}>
           <div>
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20 shadow-lg">
-                <Logo className="w-8 h-8" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-3xl font-bold tracking-tight">AI Upchaar</span>
-                <span className="text-xs font-medium text-white/70 tracking-widest uppercase">Rural Healthcare Access</span>
+            {/* PraanSeva Brand Card with Full Official Logo */}
+            <div className="bg-white/95 rounded-2xl p-4 shadow-xl border border-white/20 mb-6 flex items-center gap-4">
+              <Logo variant="full" className="h-16 w-auto drop-shadow-sm" />
+              <div className="border-l border-slate-200 pl-4 py-1">
+                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Official Telemedicine</span>
+                <span className="text-[11px] text-slate-600 font-medium leading-tight block">Care Today. Healthier Tomorrows.</span>
               </div>
             </div>
-            <h1 className="text-4xl font-bold mb-6 leading-tight">
+
+            <div className="inline-block px-3.5 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold text-white mb-5 tracking-wide border border-white/20">
+              AI • ACCESS • AFFORDABLE • FOR EVERYONE
+            </div>
+
+            <h1 className="text-3xl lg:text-4xl font-extrabold mb-4 leading-tight">
               {activeRole === UserRole.DOCTOR ? 'Doctor Portal' : 'Healthcare for Every Village'}
             </h1>
-            <p className="text-white/80 text-lg leading-relaxed">
+            <p className="text-white/85 text-base leading-relaxed mb-6">
               {activeRole === UserRole.DOCTOR
-                ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your expertise, amplified by AI.'
-                : 'Connect with a digital health assistant instantly. No appointments needed. Consult in Hindi, Punjabi, or English.'}
+                ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your clinical expertise, amplified by PraanSeva AI.'
+                : 'Connect with a digital health assistant instantly. No appointments needed. Consult in Hindi, Punjabi, Bengali, Gujarati, Marathi, Tamil, Telugu, or English.'}
             </p>
+
+            {/* 4 Brand Pillars */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold">👥</div>
+                <div className="text-xs font-bold leading-tight">People<br/><span className="font-normal text-white/70">First</span></div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold">🧠</div>
+                <div className="text-xs font-bold leading-tight">Technology<br/><span className="font-normal text-white/70">For Good</span></div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold">❤️</div>
+                <div className="text-xs font-bold leading-tight">Healthier<br/><span className="font-normal text-white/70">Communities</span></div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold">🌱</div>
+                <div className="text-xs font-bold leading-tight">A Brighter<br/><span className="font-normal text-white/70">Tomorrow</span></div>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6 pt-6">
             <div className="flex items-center gap-3 text-sm text-white/70">
               <ShieldCheck size={20} />
               <span className="font-medium">{activeRole === UserRole.DOCTOR ? 'HIPAA Compliant & Secure' : 'Private & Confidential'}</span>
@@ -92,12 +116,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
         {/* Right Side - Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative">
 
-          {/* Mobile Header */}
-          <div className="md:hidden flex items-center gap-3 mb-8 text-slate-800 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-md">
-              <Logo className="w-6 h-6" />
+          {/* Desktop & Mobile Brand Header on Form Side */}
+          <div className="flex flex-col items-center mb-6 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="h-16 flex items-center justify-center mb-2">
+              <Logo variant="full" className="h-16 w-auto" />
             </div>
-            <span className="font-bold text-xl tracking-tight">AI Upchaar</span>
+            <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-widest">
+              Care Today. Healthier Tomorrows.
+            </p>
           </div>
 
           <div className="flex justify-center mb-10 bg-slate-100 p-1.5 rounded-full w-full max-w-xs mx-auto animate-in fade-in slide-in-from-top-4 duration-500">
