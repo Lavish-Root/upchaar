@@ -73,26 +73,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
                 ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your clinical expertise, amplified by PraanSeva AI.'
                 : 'Connect with a digital health assistant instantly. No appointments needed. Consult in Hindi, Punjabi, Bengali, Gujarati, Marathi, Tamil, Telugu, or English.'}
             </p>
-
-            {/* 4 Brand Pillars */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold">👥</div>
-                <div className="text-xs font-bold leading-tight">People<br/><span className="font-normal text-white/70">First</span></div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold">🧠</div>
-                <div className="text-xs font-bold leading-tight">Technology<br/><span className="font-normal text-white/70">For Good</span></div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold">❤️</div>
-                <div className="text-xs font-bold leading-tight">Healthier<br/><span className="font-normal text-white/70">Communities</span></div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/15 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-sm font-bold">🌱</div>
-                <div className="text-xs font-bold leading-tight">A Brighter<br/><span className="font-normal text-white/70">Tomorrow</span></div>
-              </div>
-            </div>
           </div>
 
           <div className="space-y-6 pt-6">
