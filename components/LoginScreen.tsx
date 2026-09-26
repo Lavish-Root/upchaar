@@ -50,41 +50,70 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl flex overflow-hidden border border-slate-200 min-h-[600px]">
 
         {/* Left Side - Visual & Info */}
-        <div className={`hidden md:flex w-1/2 p-10 flex-col justify-between text-white transition-colors duration-500 animate-in fade-in slide-in-from-bottom-8 ${activeRole === UserRole.DOCTOR ? 'bg-slate-900' : 'bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900'}`}>
-          <div>
-            {/* PraanSeva Brand Card with Full Official Logo */}
-            <div className="bg-white/95 rounded-2xl p-4 shadow-xl border border-white/20 mb-6 flex items-center gap-4">
-              <Logo variant="full" className="h-16 w-auto drop-shadow-sm" />
-              <div className="border-l border-slate-200 pl-4 py-1">
-                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Official Telemedicine</span>
-                <span className="text-[11px] text-slate-600 font-medium leading-tight block">Care Today. Healthier Tomorrows.</span>
+        {/* Left Side - Visual & Info */}
+        <div className={`hidden md:flex w-1/2 p-10 lg:p-12 flex-col justify-between text-white transition-colors duration-500 animate-in fade-in slide-in-from-bottom-8 ${activeRole === UserRole.DOCTOR ? 'bg-slate-900' : 'bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-900'}`}>
+          <div className="space-y-6">
+            {/* Clean Brand Header */}
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 bg-white/15 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-md p-1.5 shrink-0">
+                <Logo className="w-full h-full" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl lg:text-3xl font-black tracking-tight text-white leading-none">
+                  Praan<span className="text-emerald-300">Seva</span><span className="text-xs align-super text-emerald-200 font-bold ml-0.5">™</span>
+                </span>
+                <span className="text-[11px] font-semibold text-emerald-200/90 tracking-wider uppercase mt-1">
+                  Care Today. Healthier Tomorrows.
+                </span>
               </div>
             </div>
 
-            <div className="inline-block px-3.5 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold text-white mb-5 tracking-wide border border-white/20">
-              AI • ACCESS • AFFORDABLE • FOR EVERYONE
+            {/* Mission Tagline Badge */}
+            <div>
+              <span className="inline-flex items-center px-3.5 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-semibold text-emerald-100 tracking-wider border border-white/15">
+                AI • ACCESS • AFFORDABLE • FOR EVERYONE
+              </span>
             </div>
 
-            <h1 className="text-3xl lg:text-4xl font-extrabold mb-4 leading-tight">
-              {activeRole === UserRole.DOCTOR ? 'Doctor Portal' : 'Healthcare for Every Village'}
-            </h1>
-            <p className="text-white/85 text-base leading-relaxed mb-6">
-              {activeRole === UserRole.DOCTOR
-                ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your clinical expertise, amplified by PraanSeva AI.'
-                : 'Connect with a digital health assistant instantly. No appointments needed. Consult in Hindi, Punjabi, Bengali, Gujarati, Marathi, Tamil, Telugu, or English.'}
-            </p>
+            {/* Heading & Description */}
+            <div className="space-y-3 pt-1">
+              <h1 className="text-3xl lg:text-4xl font-extrabold leading-tight text-white">
+                {activeRole === UserRole.DOCTOR ? 'Doctor Portal' : 'Healthcare for Every Village'}
+              </h1>
+              <p className="text-white/80 text-base leading-relaxed">
+                {activeRole === UserRole.DOCTOR
+                  ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your clinical expertise, amplified by PraanSeva AI.'
+                  : 'Connect with a digital health assistant instantly. No appointments needed. Consult in Hindi, Punjabi, Bengali, Gujarati, Marathi, Tamil, Telugu, or English.'}
+              </p>
+            </div>
+
+            {/* Key Benefits List */}
+            <div className="space-y-2.5 pt-2">
+              <div className="flex items-center gap-3 text-sm text-white/90">
+                <span className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center text-xs font-bold text-emerald-300 shrink-0">✓</span>
+                <span>Instant multilingual triage & symptom assessment</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-white/90">
+                <span className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center text-xs font-bold text-emerald-300 shrink-0">✓</span>
+                <span>Verified doctor-in-the-loop clinical escalation</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-white/90">
+                <span className="w-6 h-6 rounded-lg bg-white/15 flex items-center justify-center text-xs font-bold text-emerald-300 shrink-0">✓</span>
+                <span>Nearby clinics, medicine support & hospital locator</span>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-6 pt-6">
-            <div className="flex items-center gap-3 text-sm text-white/70">
-              <ShieldCheck size={20} />
-              <span className="font-medium">{activeRole === UserRole.DOCTOR ? 'HIPAA Compliant & Secure' : 'Private & Confidential'}</span>
+          <div className="space-y-4 pt-8">
+            <div className="flex items-center gap-2.5 text-xs text-white/70">
+              <ShieldCheck size={18} className="text-emerald-400 shrink-0" />
+              <span className="font-medium">{activeRole === UserRole.DOCTOR ? 'HIPAA Compliant & Encrypted Records' : 'Private, Confidential & Secure'}</span>
             </div>
 
             {activeRole === UserRole.DOCTOR && (
-              <div className="bg-white/10 p-4 rounded-xl text-sm text-white/80 backdrop-blur-sm border border-white/10">
+              <div className="bg-white/10 p-3.5 rounded-xl text-xs text-white/80 backdrop-blur-sm border border-white/10">
                 <span className="font-bold block mb-1 text-white">Demo Credentials:</span>
-                <div className="flex justify-between font-mono text-xs opacity-80">
+                <div className="flex justify-between font-mono opacity-90">
                   <span>ID: DR101</span>
                   <span>Pass: password123</span>
                 </div>
@@ -96,39 +125,44 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
         {/* Right Side - Form */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center relative">
 
-          {/* Desktop & Mobile Brand Header on Form Side */}
-          <div className="flex flex-col items-center mb-6 text-center animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="h-16 flex items-center justify-center mb-2">
-              <Logo variant="full" className="h-16 w-auto" />
+          {/* Mobile Header (Only on small screens) */}
+          <div className="md:hidden flex items-center gap-3 mb-6 text-slate-800 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-md border border-slate-200 p-1.5 shrink-0">
+              <Logo className="w-full h-full" />
             </div>
-            <p className="text-[11px] font-semibold text-emerald-700 uppercase tracking-widest">
-              Care Today. Healthier Tomorrows.
-            </p>
+            <div className="flex flex-col">
+              <span className="font-black text-2xl tracking-tight text-[#002D56] leading-none">
+                Praan<span className="text-[#00875A]">Seva</span><span className="text-xs align-super text-emerald-600 font-bold ml-0.5">™</span>
+              </span>
+              <span className="text-[10px] font-semibold text-emerald-600 tracking-wider uppercase mt-1">Care Today. Healthier Tomorrows.</span>
+            </div>
           </div>
 
-          <div className="flex justify-center mb-10 bg-slate-100 p-1.5 rounded-full w-full max-w-xs mx-auto animate-in fade-in slide-in-from-top-4 duration-500">
+          {/* Role Tabs */}
+          <div className="flex justify-center mb-8 bg-slate-100 p-1.5 rounded-full w-full max-w-xs mx-auto animate-in fade-in slide-in-from-top-4 duration-500">
             <button
               onClick={() => setActiveRole(UserRole.PATIENT)}
-              className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${activeRole === UserRole.PATIENT ? 'bg-white text-emerald-600 shadow-sm scale-105' : 'text-slate-500 hover:text-slate-700'
+              className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${activeRole === UserRole.PATIENT ? 'bg-white text-emerald-700 shadow-sm scale-105' : 'text-slate-500 hover:text-slate-700'
                 }`}
             >
               Patient Login
             </button>
             <button
               onClick={() => setActiveRole(UserRole.DOCTOR)}
-              className={`flex-1 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${activeRole === UserRole.DOCTOR ? 'bg-white text-slate-900 shadow-sm scale-105' : 'text-slate-500 hover:text-slate-700'
+              className={`flex-1 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 ${activeRole === UserRole.DOCTOR ? 'bg-white text-slate-900 shadow-sm scale-105' : 'text-slate-500 hover:text-slate-700'
                 }`}
             >
               Doctor Login
             </button>
           </div>
 
-          <div key={activeRole} className="mb-8 text-center animate-in fade-in slide-in-from-top-4 duration-500">
-            <h3 className="text-2xl font-bold text-slate-800 mb-2">
+          {/* Form Header */}
+          <div key={activeRole} className="mb-6 text-center animate-in fade-in slide-in-from-top-4 duration-500">
+            <h3 className="text-2xl font-extrabold text-slate-800 mb-1.5">
               {activeRole === UserRole.DOCTOR ? 'Welcome Back, Doctor' : 'Start Your Consultation'}
             </h3>
             <p className="text-slate-500 text-sm">
-              {activeRole === UserRole.DOCTOR ? 'Enter your credentials to access dashboard' : 'Enter your details to generate a session'}
+              {activeRole === UserRole.DOCTOR ? 'Enter your credentials to access the clinical portal' : 'Enter your details to begin instant AI consultation'}
             </p>
           </div>
 
