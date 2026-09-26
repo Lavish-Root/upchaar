@@ -55,7 +55,7 @@ function writeStore(data) {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    service: 'PraanSeva Telemedicine Backend',
+    service: 'AI Upchaar Telemedicine Backend',
     timestamp: new Date().toISOString(),
     groqConfigured: Boolean(process.env.GROQ_API_KEY),
     geminiConfigured: Boolean(process.env.GEMINI_API_KEY)
@@ -218,5 +218,5 @@ app.post('/api/ai/chat', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`PraanSeva Backend running on port ${PORT}`);
+  console.log(`AI Upchaar Backend running on port ${PORT}`);
 });

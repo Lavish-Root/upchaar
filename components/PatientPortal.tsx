@@ -262,7 +262,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const initChat = (speak: boolean = false) => {
     setChatSession(startNewChat());
-    const greetingText = "Namaste, main PraanSeva hoon. Bataiye, aapko kya takleef hai? Aap kisi bhi bhasha mein bata sakte hain.";
+    const greetingText = "Namaste, main AI Upchaar hoon. Bataiye, aapko kya takleef hai? Aap kisi bhi bhasha mein bata sakte hain.";
 
     setMessages([{
       id: '1',
@@ -1543,7 +1543,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         <div className="flex flex-col items-center">
           <div className="flex items-center gap-1.5">
             <Logo className="w-4 h-4 text-emerald-600" />
-            <span className="font-bold text-slate-800 text-sm">PraanSeva Assistant</span>
+            <span className="font-bold text-slate-800 text-sm">AI Upchaar Assistant</span>
           </div>
           <span className="text-[10px] text-emerald-600 flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Language Adaptive

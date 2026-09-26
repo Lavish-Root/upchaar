@@ -31,7 +31,7 @@ export const reverseGeocodeLocality = async (
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
       {
         headers: {
-          'User-Agent': 'PraanSeva-RuralTelemedicine/2.0 (contact@praanseva.org)'
+          'User-Agent': 'AIUpchaar-RuralTelemedicine/2.0 (contact@aiupchaar.org)'
         }
       }
     );
@@ -85,7 +85,7 @@ export const searchIndianLocation = async (
       )}&countrycodes=in&limit=1`,
       {
         headers: {
-          'User-Agent': 'PraanSeva-RuralTelemedicine/2.0 (contact@praanseva.org)'
+          'User-Agent': 'AIUpchaar-RuralTelemedicine/2.0 (contact@aiupchaar.org)'
         }
       }
     );
@@ -153,7 +153,7 @@ export const getLiveNearbyHospitals = async (lat: number, lng: number): Promise<
     try {
       const res = await fetch(url, {
         headers: {
-          'User-Agent': 'PraanSeva-RuralTelemedicine/2.0 (contact@praanseva.org)'
+          'User-Agent': 'AIUpchaar-RuralTelemedicine/2.0 (contact@aiupchaar.org)'
         }
       });
       if (res.ok) {

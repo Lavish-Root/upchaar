@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: praanseva-api
+    name: ai-upchaar-api
     env: node
     rootDir: server
     buildCommand: npm install
