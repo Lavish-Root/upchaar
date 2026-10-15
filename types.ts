@@ -176,6 +176,24 @@ export interface HealthTip {
   likes: number;
 }
 
+export interface TipComment {
+  id: string;
+  tipId: string;
+  text: string;
+  author: string;
+  authorRole?: 'DOCTOR' | 'PATIENT';
+  isDoctor?: boolean;
+  doctorSpecialization?: string;
+  time: string;
+  timestamp?: number;
+  likes?: number;
+  likedByMe?: boolean;
+  parentId?: string | null; // For Instagram-style threaded replies
+  replyToAuthor?: string;   // Name of user being replied to
+  pinned?: boolean;
+}
+
+
 export interface WellnessActivity {
   id: string;
   title: string;

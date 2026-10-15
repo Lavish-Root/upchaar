@@ -59,7 +59,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
               },
               body: JSON.stringify({
                 model: m,
-                messages: [{ role: 'user', content: 'Say "PraanSeva Groq Connected"' }],
+                messages: [{ role: 'user', content: 'Say "PraanSewa Groq Connected"' }],
                 max_tokens: 15
               })
             });

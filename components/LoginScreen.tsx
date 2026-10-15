@@ -64,7 +64,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
             </p>
             <p className="text-white/85 text-base leading-relaxed mb-6">
               {activeRole === UserRole.DOCTOR
-                ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your clinical expertise, amplified by PraanSeva AI.'
+                ? 'Access patient records, review AI triage reports, and manage prescriptions securely. Your clinical expertise, amplified by PraanSewa AI.'
                 : 'Connect with a digital health assistant instantly. No appointments needed. Consult in Hindi, Punjabi, Bengali, Gujarati, Marathi, Tamil, Telugu, or English.'}
             </p>
           </div>

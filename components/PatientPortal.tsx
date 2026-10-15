@@ -12,8 +12,19 @@ import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hosp
 import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals, searchIndianLocation, reverseGeocodeLocality } from '../services/geminiService';
 import { UniversalChatSession } from '../services/aiService';
 import { playRealisticVoice, stopRealisticVoice, setVoiceStateListener } from '../services/voiceService';
+
 import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
+import TipCommentsModal from './TipCommentsModal';
+import {
+  getTipCommentCounts,
+  subscribeToTipComments,
+  getTipReactions,
+  subscribeToTipReactions,
+  reactToTip,
+  TIP_EMOJIS
+} from '../services/tipCommentsService';
 import Logo from './Logo';
+
 
 // Declare Leaflet global for TypeScript
 declare const L: any;
@@ -67,8 +78,24 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   });
   const [activeTipComments, setActiveTipComments] = useState<string | null>(null);
   const [activeReactionDrawer, setActiveReactionDrawer] = useState<string | null>(null);
-  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [activeExpandedEmojiPicker, setActiveExpandedEmojiPicker] = useState<string | null>(null);
+  const [, setCommentCountsVersion] = useState(0);
+  const [, setReactionsVersion] = useState(0);
+
+  // Live real-time sync comments & emoji reactions between Doctor Dashboard & Patient Portal
+  useEffect(() => {
+    const unsubComments = subscribeToTipComments(() => {
+      setCommentCountsVersion(v => v + 1);
+    });
+    const unsubReactions = subscribeToTipReactions(() => {
+      setReactionsVersion(v => v + 1);
+    });
+    return () => {
+      unsubComments();
+      unsubReactions();
+    };
+  }, []);
+
   const [commentInput, setCommentInput] = useState('');
   const [showCommentEmojiPicker, setShowCommentEmojiPicker] = useState(false);
 
@@ -262,7 +289,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const initChat = (speak: boolean = false) => {
     setChatSession(startNewChat());
-    const greetingText = "Namaste, main PraanSeva AI Doctor assistant hoon. Bataiye, aapko kya takleef hai? Aap kisi bhi bhasha mein bata sakte hain.";
+    const greetingText = "Namaste, main PraanSewa AI Doctor assistant hoon. Bataiye, aapko kya takleef hai? Aap kisi bhi bhasha mein bata sakte hain.";
 
     setMessages([{
       id: '1',
@@ -1206,161 +1233,25 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   // --- REACTION & COMMENTS HANDLERS ---
   const handleReaction = (tipId: string, emoji: string) => {
-    setTipReactions(prev => ({ ...prev, [tipId]: emoji }));
+    reactToTip(tipId, emoji, user.id);
     setActiveReactionDrawer(null);
-  };
-
-  const handleAddComment = (tipId: string) => {
-    if (!commentInput.trim()) return;
-    const newComment = {
-      id: Math.random().toString(36).substring(7),
-      text: commentInput.trim(),
-      author: user.name,
-      time: 'Just now'
-    };
-    setTipComments(prev => ({
-      ...prev,
-      [tipId]: [...(prev[tipId] || []), newComment]
-    }));
-    setCommentInput('');
   };
 
   const renderCommentsSheet = () => {
     if (!activeTipComments) return null;
     const tip = MOCK_HEALTH_TIPS.find(t => t.id === activeTipComments);
     if (!tip) return null;
-    const comments = tipComments[activeTipComments] || [];
 
     return (
-      <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-        <div className="absolute inset-0" onClick={() => setActiveTipComments(null)} />
-        <div className="bg-white w-full max-h-[85vh] rounded-t-3xl shadow-2xl relative flex flex-col animate-in slide-in-from-bottom-full duration-300">
-          <div className="flex justify-center p-3 border-b border-slate-100 shrink-0">
-            <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
-          </div>
-          <div className="p-4 border-b border-slate-100 shrink-0 flex items-center justify-between">
-            <h3 className="font-bold text-slate-800 text-lg">Comments</h3>
-            <button onClick={() => setActiveTipComments(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition">
-              <span className="sr-only">Close</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            <div className="flex items-start gap-3 pb-4 border-b border-slate-50">
-              <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
-                {tip.doctorName.charAt(4)}
-              </div>
-              <div>
-                <span className="font-bold text-sm text-slate-800 mr-2">{tip.doctorName}</span>
-                <p className="text-sm text-slate-700 leading-relaxed mt-0.5">{tip.content}</p>
-                <span className="text-[10px] text-slate-400 mt-1 block">{new Date(tip.timestamp).toLocaleDateString()}</span>
-              </div>
-            </div>
-
-            {comments.length === 0 ? (
-              <div className="text-center py-10">
-                <MessageSquare className="mx-auto text-slate-200 mb-2 w-10 h-10" />
-                <p className="text-slate-500 font-medium text-sm">No comments yet.</p>
-                <p className="text-slate-400 text-xs">Be the first to share your thoughts!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {comments.map((c, i) => (
-                  <div key={c.id} className="flex gap-3 group animate-in slide-in-from-right-4 fade-in duration-300" style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}>
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
-                      {c.author.charAt(0)}
-                    </div>
-                    <div className="flex-1 bg-slate-50 p-3 rounded-2xl rounded-tl-none border border-slate-100">
-                      <div className="flex justify-between items-baseline mb-1">
-                        <span className="font-bold text-xs text-slate-800">{c.author}</span>
-                        <span className="text-[9px] text-slate-400">{c.time}</span>
-                      </div>
-                      <p className="text-sm text-slate-700">{c.text}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="p-3 border-t border-slate-100 bg-white shrink-0 mt-auto pb-safe flex flex-col gap-2">
-            {/* Quick Emoji Bar for Comments */}
-            {!showCommentEmojiPicker && (
-              <div className="flex items-center gap-4 px-2 overflow-x-auto no-scrollbar justify-between">
-                {['❤️', '🙌', '🔥', '👏', '😢', '😍', '😮', '😂'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCommentInput(prev => prev + emoji);
-                    }}
-                    className="text-2xl hover:scale-125 transition-transform duration-200"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Full Emoji List for Comments */}
-            {showCommentEmojiPicker && (
-              <div className="grid grid-cols-8 gap-3 p-3 max-h-48 overflow-y-auto mb-1 bg-slate-50 rounded-xl border border-slate-200 shadow-sm animate-in zoom-in-95 duration-200 no-scrollbar">
-                {FULL_EMOJI_LIST.map((emoji, i) => (
-                  <button
-                    key={i}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCommentInput(prev => prev + emoji);
-                    }}
-                    className="text-2xl hover:scale-125 transition-transform duration-200"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-end gap-2 bg-slate-50 border border-slate-200 rounded-3xl p-1 pr-1.5 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0 m-1">
-                {user.name.charAt(0)}
-              </div>
-              <textarea
-                value={commentInput}
-                onChange={e => setCommentInput(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-sm py-2.5 max-h-24 min-h-[40px] resize-none"
-                rows={1}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleAddComment(tip.id);
-                  }
-                }}
-              />
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowCommentEmojiPicker(!showCommentEmojiPicker);
-                }}
-                className={`p-2 rounded-full mb-0.5 transition-colors ${showCommentEmojiPicker ? 'bg-slate-200 text-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
-                type="button"
-              >
-                <Smile size={18} />
-              </button>
-              <button
-                onClick={() => handleAddComment(tip.id)}
-                disabled={!commentInput.trim()}
-                className={`p-2 rounded-full mb-0.5 transition-colors ${commentInput.trim() ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
-              >
-                <Send size={15} className={commentInput.trim() ? '-ml-0.5' : ''} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TipCommentsModal
+        tip={tip}
+        isOpen={!!activeTipComments}
+        onClose={() => setActiveTipComments(null)}
+        currentUser={user}
+      />
     );
   };
+
   const renderExpandedEmojiSheet = () => {
     if (!activeExpandedEmojiPicker) return null;
 
@@ -1467,37 +1358,27 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                   </div>
                 )}
                 <button
-                  className={`flex items-center gap-1.5 text-xs font-bold transition relative group py-1 ${tipReactions[tip.id] ? 'text-slate-700' : 'text-slate-500 hover:text-slate-700'}`}
+                  className={`flex items-center gap-1.5 text-xs font-bold transition relative group py-1 ${getTipReactions(tip.id, user.id).userEmoji ? 'text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}
                   onClick={() => {
-                    // Specific logic for mobile taps: if no reaction and drawer closed, open drawer
-                    // Otherwise, toggle the heart reaction (we'll just use the first default if not set, or clear if set)
-                    if (!tipReactions[tip.id] && activeReactionDrawer !== tip.id) {
+                    const reactions = getTipReactions(tip.id, user.id);
+                    if (!reactions.userEmoji && activeReactionDrawer !== tip.id) {
                       setActiveReactionDrawer(tip.id);
                     } else {
-                      handleReaction(tip.id, tipReactions[tip.id] ? '' : '👍🏼');
+                      handleReaction(tip.id, reactions.userEmoji ? reactions.userEmoji : '❤️');
                     }
                   }}
                 >
                   {(() => {
-                    const emojis = ['👍🏼', '❤️', '😄', '😲', '😟', '🙏🏼', '💯', '🙌🏼'];
-                    const seed1 = tip.id.charCodeAt(0) || 0;
-                    const seed2 = tip.id.charCodeAt(tip.id.length - 1) || 0;
+                    const reactions = getTipReactions(tip.id, user.id);
+                    const totalCount = reactions.total;
 
-                    const top1 = emojis[seed1 % emojis.length];
-                    const top2 = emojis[(seed2 + 1) % emojis.length];
-                    const top3 = emojis[(seed1 + seed2 + 2) % emojis.length];
+                    // Sort emojis by count descending to display top reacted emojis
+                    const sortedEmojis = TIP_EMOJIS
+                      .filter(emoji => (reactions.counts[emoji] || 0) > 0)
+                      .sort((a, b) => (reactions.counts[b] || 0) - (reactions.counts[a] || 0));
 
-                    const topSet = new Set([top1, top2, top3]);
-                    const totalCount = tip.likes + (tipReactions[tip.id] ? 1 : 0);
-                    const displayCount = Math.min(totalCount, 3);
-
-                    let topArr = Array.from(topSet).slice(0, displayCount);
-
-                    if (tipReactions[tip.id]) {
-                      topArr = [tipReactions[tip.id], ...topArr.filter(e => e !== tipReactions[tip.id])].slice(0, displayCount);
-                    }
-
-                    const remaining = Math.max(0, totalCount - topArr.length);
+                    const topArr = sortedEmojis.slice(0, 3);
+                    const remaining = Math.max(0, totalCount - topArr.reduce((sum, e) => sum + (reactions.counts[e] || 0), 0));
 
                     if (totalCount === 0) {
                       return <Heart size={16} className="text-slate-400 group-hover:fill-rose-100 group-hover:text-rose-500 transition-colors" />;
@@ -1510,7 +1391,10 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                             <span key={idx} className="text-base relative z-10 bg-slate-50 rounded-full ring-2 ring-slate-50">{emoji}</span>
                           ))}
                         </div>
-                        {remaining > 0 && <span className="text-slate-500">+{remaining}</span>}
+                        <span className="font-bold text-slate-700">{totalCount}</span>
+                        {reactions.userEmoji && (
+                          <span className="text-[10px] text-rose-600 bg-rose-50 border border-rose-200 px-1 rounded-full font-bold ml-0.5">You: {reactions.userEmoji}</span>
+                        )}
                       </div>
                     );
                   })()}
@@ -1522,8 +1406,9 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 onClick={() => setActiveTipComments(tip.id)}
                 className="text-xs font-bold text-slate-500 hover:text-blue-600 transition flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-full"
               >
-                <MessageSquare size={14} /> Comment {(tipComments[tip.id] && tipComments[tip.id].length > 0) ? `(${tipComments[tip.id].length})` : ''}
+                <MessageSquare size={14} /> Comment {getTipCommentCounts(tip.id).total > 0 ? `(${getTipCommentCounts(tip.id).total})` : ''}
               </button>
+
             </div>
           </div>
         ))}
@@ -1543,7 +1428,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         <div className="flex flex-col items-center">
           <div className="flex items-center gap-1.5">
             <Logo className="w-5 h-5" />
-            <span className="font-bold text-slate-800 text-sm">PraanSeva AI Assistant</span>
+            <span className="font-bold text-slate-800 text-sm">PraanSewa AI Assistant</span>
           </div>
           <span className="text-[10px] text-emerald-600 flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Language Adaptive

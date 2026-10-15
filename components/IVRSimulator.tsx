@@ -89,7 +89,7 @@ const IVRSimulator: React.FC<IVRSimulatorProps> = ({ onSaveOfflineSession }) => 
     setDeliveryConfirmed(false);
     setMobileNumber(null);
     setExpectedOtp(null);
-    speak("Namaste, main PraanSeva AI Doctor assistant hoon. Bataiye, aapko kya takleef hai? Aap kisi bhi bhasha mein bata sakte hain.");
+    speak("Namaste, main PraanSewa AI Doctor assistant hoon. Bataiye, aapko kya takleef hai? Aap kisi bhi bhasha mein bata sakte hain.");
   };
 
   const handleInput = async (input: string) => {
@@ -205,7 +205,7 @@ const IVRSimulator: React.FC<IVRSimulatorProps> = ({ onSaveOfflineSession }) => 
                             {doctorJoined ? <ShieldAlert size={32}/> : <User size={32}/>}
                         </div>
                         <div className="text-left">
-                            <p className="font-bold text-lg leading-none">{doctorJoined ? 'Dr. Singh' : 'PraanSeva AI'}</p>
+                            <p className="font-bold text-lg leading-none">{doctorJoined ? 'Dr. Singh' : 'PraanSewa AI'}</p>
                             <p className="text-xs opacity-40 mt-1 font-mono tracking-tighter">GSM Network • 12.2 kbps</p>
                         </div>
                     </div>

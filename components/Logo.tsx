@@ -10,7 +10,7 @@ export interface LogoProps {
 const Logo: React.FC<LogoProps> = ({
   className = "w-8 h-8",
   variant = "icon",
-  alt = "PraanSeva Logo",
+  alt = "PraanSewa Logo",
   showTagline = false,
 }) => {
   if (variant === 'full') {
@@ -43,7 +43,7 @@ const Logo: React.FC<LogoProps> = ({
         <div className="flex flex-col items-start leading-none">
           <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
             <span className="text-[#002D56]">Praan</span>
-            <span className="text-[#00875A]">Seva</span>
+            <span className="text-[#00875A]">Sewa</span>
             <span className="text-[10px] align-super text-emerald-600 font-bold ml-0.5">™</span>
           </span>
           {showTagline && (

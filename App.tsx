@@ -18,18 +18,30 @@ function App() {
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [aiConfig, setAiConfig] = useState(getAIConfig());
 
-  // Helper to ensure default / emergency cases and user-submitted cases are merged
+  // Helper to ensure default / emergency cases and user-submitted cases are merged without duplicate IDs
   const mergeCasesWithMocks = (savedCases: MedicalCase[]): MedicalCase[] => {
-    const existingIds = new Set(savedCases.map(c => c.id));
-    const result = [...savedCases];
+    if (!Array.isArray(savedCases)) return MOCK_CASES;
+    const seen = new Set<string>();
+    const result: MedicalCase[] = [];
+
+    // Add unique saved cases (preventing duplicate keys from repeated test sessions)
+    for (const c of savedCases) {
+      if (c && c.id && !seen.has(c.id)) {
+        seen.add(c.id);
+        result.push(c);
+      }
+    }
+
+    // Add default mock cases if not already present
     for (const mc of MOCK_CASES) {
-      if (!existingIds.has(mc.id)) {
-        result.unshift(mc);
-        existingIds.add(mc.id);
+      if (!seen.has(mc.id)) {
+        seen.add(mc.id);
+        result.push(mc);
       }
     }
     return result;
   };
+
 
   // Persistent States across sessions & tabs
   const [cases, setCases] = useState<MedicalCase[]>(() => {
@@ -147,6 +159,24 @@ function App() {
     }
   };
 
+  const handleDeleteCase = (caseId: string) => {
+    setCases(prev => {
+      const updated = prev.filter(c => c.id !== caseId);
+      try {
+        localStorage.setItem('ai_upchaar_cases', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const handleResetCases = () => {
+    try {
+      localStorage.removeItem('ai_upchaar_cases');
+    } catch (e) {}
+    setCases(MOCK_CASES);
+  };
+
+
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
     if (user.role === UserRole.DOCTOR) {
@@ -173,7 +203,7 @@ function App() {
           <Logo className="w-full h-full" />
         </div>
         <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
-        <p className="text-slate-600 mt-4 text-sm font-semibold tracking-wider uppercase">Initializing PraanSeva...</p>
+        <p className="text-slate-600 mt-4 text-sm font-semibold tracking-wider uppercase">Initializing PraanSewa...</p>
       </div>
     );
   }
@@ -198,7 +228,7 @@ function App() {
                 </div>
                 <div className="flex flex-col items-start leading-none text-left">
                   <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-                    <span className="text-[#002D56]">Praan</span><span className="text-[#00875A]">Seva</span>
+                    <span className="text-[#002D56]">Praan</span><span className="text-[#00875A]">Sewa</span>
                     <span className="text-[10px] align-super text-emerald-600 font-bold ml-0.5">™</span>
                   </span>
                   <span className="text-[9px] sm:text-[10px] font-semibold text-emerald-700 tracking-wider uppercase mt-0.5">
@@ -272,8 +302,11 @@ function App() {
             stats={stats}
             offlineSessions={offlineSessions}
             onUpdateStatus={handleUpdateStatus}
+            onDeleteCase={handleDeleteCase}
+            onResetCases={handleResetCases}
             onLogout={handleLogout}
           />
+
         )}
       </main>
     </div>

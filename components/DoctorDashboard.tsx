@@ -4,11 +4,22 @@ import {
     Users, AlertTriangle, Truck, Activity, CheckCircle, XCircle,
     FileText, Search, Clock, Play, Pause, MapPin, Brain, LogOut, Save, ShieldAlert,
     Edit2, Package, User, Phone, Briefcase, Camera, Loader2, Upload, Leaf, Plus, Star, Sparkles, Zap, Heart, Info,
-    Video, Navigation, Server, Database, Globe, ZapOff, Wifi, WifiOff, Key
+    Video, Navigation, Server, Database, Globe, ZapOff, Wifi, WifiOff, Key,
+    MessageSquare, Stethoscope, Trash2, RotateCcw
 } from 'lucide-react';
 import { MedicalCase, CaseSeverity, CaseStatus, PatientProfile, User as UserType, HomeRemedy, HealthTip, WellnessActivity, Season, OfflineSession } from '../types';
 import PredictiveAlerts from './PredictiveAlerts';
+import TipCommentsModal from './TipCommentsModal';
 import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
+import {
+    getTipCommentCounts,
+    subscribeToTipComments,
+    getTipReactions,
+    subscribeToTipReactions,
+    reactToTip,
+    TIP_EMOJIS
+} from '../services/tipCommentsService';
+
 
 // Declare Leaflet global for TypeScript
 declare const L: any;
@@ -20,22 +31,47 @@ interface DoctorDashboardProps {
     stats: any;
     offlineSessions?: OfflineSession[];
     onUpdateStatus: (caseId: string, status: CaseStatus, prescription?: string, notes?: string) => void;
+    onDeleteCase?: (caseId: string) => void;
+    onResetCases?: () => void;
     onLogout: () => void;
 }
 
-const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients = [], stats, offlineSessions = [], onUpdateStatus, onLogout }) => {
+const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
+    user,
+    cases,
+    patients = [],
+    stats,
+    offlineSessions = [],
+    onUpdateStatus,
+    onDeleteCase,
+    onResetCases,
+    onLogout
+}) => {
     const [currentView, setCurrentView] = useState<'ACTIVE_CASES' | 'PREDICTIVE' | 'PROFILE' | 'WELLNESS_MGMT' | 'IVR_MONITORING'>('ACTIVE_CASES');
-    const [filter, setFilter] = useState<'ALL' | 'CRITICAL' | 'PENDING'>('ALL');
+    const [filter, setFilter] = useState<'ALL' | 'CRITICAL' | 'PENDING' | 'COMPLETED'>('ALL');
 
     // Fix: Derive filteredCases from cases and filter state to resolve 'Cannot find name' errors
     const filteredCases = cases.filter(c => {
         if (filter === 'ALL') return true;
         if (filter === 'CRITICAL') return c.severity === CaseSeverity.CRITICAL;
         if (filter === 'PENDING') return c.status === CaseStatus.PENDING_APPROVAL || c.status === CaseStatus.OPEN;
+        if (filter === 'COMPLETED') return c.status === CaseStatus.APPROVED || c.status === CaseStatus.COMPLETED;
         return true;
     });
 
     const [selectedCase, setSelectedCase] = useState<MedicalCase | null>(cases[0] || null);
+
+    const handleDeleteCaseClick = (caseId: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        if (onDeleteCase) {
+            onDeleteCase(caseId);
+            if (selectedCase?.id === caseId) {
+                const remaining = filteredCases.filter(c => c.id !== caseId);
+                setSelectedCase(remaining[0] || null);
+            }
+        }
+    };
+
 
     useEffect(() => {
         if (!selectedCase && filteredCases.length > 0) {
@@ -52,6 +88,24 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
     const [authoredRemedies, setAuthoredRemedies] = useState<HomeRemedy[]>([]);
     const [authoredTips, setAuthoredTips] = useState<HealthTip[]>([]);
     const [authoredActivities, setAuthoredActivities] = useState<WellnessActivity[]>([]);
+    const [selectedTipForComments, setSelectedTipForComments] = useState<HealthTip | null>(null);
+    const [, setCommentCountsVersion] = useState(0);
+    const [, setReactionCountsVersion] = useState(0);
+
+    // Live real-time sync for comments and emoji reactions across dashboard & patient portal
+    useEffect(() => {
+        const unsubComments = subscribeToTipComments(() => {
+            setCommentCountsVersion(v => v + 1);
+        });
+        const unsubReactions = subscribeToTipReactions(() => {
+            setReactionCountsVersion(v => v + 1);
+        });
+        return () => {
+            unsubComments();
+            unsubReactions();
+        };
+    }, []);
+
 
     // Wellness Form States
     const [remedyForm, setRemedyForm] = useState({ title: '', ailment: 'Cough', season: Season.ALL, steps: '', safety: '' });
@@ -467,20 +521,108 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                                 </div>
                             </div>
                         ))}
-                        {wellnessTab === 'TIPS' && [...authoredTips, ...MOCK_HEALTH_TIPS].map((t: any, index) => (
-                            <div key={t.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-blue-400 transition group animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded-full">{t.category}</span>
-                                    <span className="text-[10px] text-slate-400">{new Date(t.timestamp).toLocaleDateString()}</span>
-                                </div>
-                                <h4 className="font-bold text-slate-800 mb-1">{t.title}</h4>
-                                <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-4">{t.content}</p>
-                                <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                                    <span className="text-[10px] text-slate-400">Verified by {t.doctorName}</span>
-                                    <span className="text-[10px] text-blue-600 font-bold uppercase flex items-center gap-1"><Heart size={10} /> {t.likes || 0} Likes</span>
+                        {wellnessTab === 'TIPS' && (
+                            <div className="col-span-full bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border border-blue-200/80 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-2xs">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                        <Stethoscope size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                                            Patient Questions &amp; Interactive Tips
+                                            <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2 py-0.5 rounded-full uppercase">
+                                                Instagram Style Q&amp;A
+                                            </span>
+                                        </h4>
+                                        <p className="text-xs text-slate-600 mt-0.5">
+                                            Patients ask questions on your tips. Click <strong>"Comments"</strong> on any tip to reply back with verified doctor advice and AI clinical assistance.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        ))}
+                        )}
+                        {wellnessTab === 'TIPS' && [...authoredTips, ...MOCK_HEALTH_TIPS].map((t: any, index) => {
+                            const counts = getTipCommentCounts(t.id);
+                            const reactions = getTipReactions(t.id, user.id);
+
+                            return (
+                                <div key={t.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-blue-400 transition group animate-in zoom-in-95 fade-in duration-300 flex flex-col justify-between" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                                    <div>
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded-full">{t.category}</span>
+                                            <span className="text-[10px] text-slate-400">{new Date(t.timestamp).toLocaleDateString()}</span>
+                                        </div>
+                                        <h4 className="font-bold text-slate-800 mb-1">{t.title}</h4>
+                                        <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-4">{t.content}</p>
+                                    </div>
+                                    <div className="pt-3 border-t border-slate-100 flex flex-col gap-2.5">
+                                        {/* Author & Live Reactions Summary */}
+                                        <div className="flex items-center justify-between text-[11px]">
+                                            <span className="text-slate-400 font-medium">Verified by {t.doctorName}</span>
+                                            <span className="text-slate-600 font-bold flex items-center gap-1.5">
+                                                <span className="text-rose-500 flex items-center gap-0.5">
+                                                    <Heart size={12} className="fill-rose-500" />
+                                                </span>
+                                                <span>{reactions.total} Reactions</span>
+                                            </span>
+                                        </div>
+
+                                        {/* Live Real-time Emoji Reactions Bar */}
+                                        <div className="flex items-center flex-wrap gap-1.5 py-0.5">
+                                            {TIP_EMOJIS.map(emoji => {
+                                                const count = reactions.counts[emoji] || 0;
+                                                const isUserReacted = reactions.userEmoji === emoji;
+                                                return (
+                                                    <button
+                                                        key={emoji}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            reactToTip(t.id, emoji, user.id);
+                                                        }}
+                                                        title={`React with ${emoji} (Current: ${count})`}
+                                                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold transition-all transform active:scale-95 ${
+                                                            isUserReacted
+                                                                ? 'bg-rose-50 border border-rose-300 text-rose-700 shadow-xs ring-1 ring-rose-300 scale-105'
+                                                                : 'bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:border-slate-300'
+                                                        }`}
+                                                    >
+                                                        <span className="text-sm leading-none">{emoji}</span>
+                                                        <span className={`text-[11px] ${isUserReacted ? 'font-bold text-rose-700' : 'text-slate-500'}`}>
+                                                            {count}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Comments & Real-Time Question Counting Button */}
+                                        <button
+                                            onClick={() => setSelectedTipForComments(t)}
+                                            className="w-full flex items-center justify-between px-3.5 py-2 bg-blue-50/80 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl text-xs font-bold transition group/btn shadow-2xs mt-1"
+                                        >
+                                            <span className="flex items-center gap-1.5">
+                                                <MessageSquare size={13} className="text-blue-600" />
+                                                <span>Comments ({counts.total})</span>
+                                            </span>
+                                            {counts.unansweredQuestions > 0 ? (
+                                                <span className="bg-amber-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-2xs animate-pulse flex items-center gap-1">
+                                                    <span>{counts.unansweredQuestions} {counts.unansweredQuestions === 1 ? 'Question' : 'Questions'}</span>
+                                                </span>
+                                            ) : counts.answeredQuestions > 0 ? (
+                                                <span className="bg-emerald-600 text-white text-[10px] px-2.5 py-0.5 rounded-full font-bold shadow-2xs flex items-center gap-1">
+                                                    <CheckCircle size={10} /> All Answered
+                                                </span>
+                                            ) : (
+                                                <span className="text-[11px] text-blue-600 group-hover/btn:translate-x-0.5 transition-transform flex items-center gap-0.5 font-bold">
+                                                    Reply &rarr;
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+
                         {wellnessTab === 'ACTIVITIES' && [...authoredActivities, ...MOCK_WELLNESS_ACTIVITIES].map((a: any, index) => (
                             <div key={a.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-emerald-400 transition group animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
                                 <div className="flex justify-between items-start mb-2">
@@ -555,9 +697,20 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                     </div>
                 </div>
             )}
+
+            {/* Instagram-Style Comments Sheet for Doctor */}
+            {selectedTipForComments && (
+                <TipCommentsModal
+                    tip={selectedTipForComments}
+                    isOpen={!!selectedTipForComments}
+                    onClose={() => setSelectedTipForComments(null)}
+                    currentUser={user}
+                />
+            )}
             <MobileBottomNav />
         </div>
     );
+
 
     // --- NEW ADD-ON MODULE: Offline IVR Monitoring ---
     const renderIVRMonitoring = () => {
@@ -845,11 +998,23 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                             </div>
                         </div>
                     </div>
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">Patient Queue</h2>
-                    <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                        <button onClick={() => setFilter('ALL')} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filter === 'ALL' ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All</button>
-                        <button onClick={() => setFilter('PENDING')} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filter === 'PENDING' ? 'bg-amber-500 text-white shadow-md' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}>Pending</button>
-                        <button onClick={() => setFilter('CRITICAL')} className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filter === 'CRITICAL' ? 'bg-red-500 text-white shadow-md' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}>Critical</button>
+                    <div className="flex items-center justify-between mb-1">
+                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">Patient Queue</h2>
+                        {onResetCases && (
+                            <button
+                                onClick={onResetCases}
+                                title="Reset queue to clean mock cases (clears stale test sessions)"
+                                className="text-[11px] font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 border border-slate-200 px-2 py-1 rounded-lg transition flex items-center gap-1 shadow-2xs"
+                            >
+                                <RotateCcw size={12} /> Reset Queue
+                            </button>
+                        )}
+                    </div>
+                    <div className="mt-3 flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+                        <button onClick={() => setFilter('ALL')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filter === 'ALL' ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All ({cases.length})</button>
+                        <button onClick={() => setFilter('PENDING')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filter === 'PENDING' ? 'bg-amber-500 text-white shadow-md' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}>Pending ({cases.filter(c => c.status === CaseStatus.PENDING_APPROVAL || c.status === CaseStatus.OPEN).length})</button>
+                        <button onClick={() => setFilter('CRITICAL')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filter === 'CRITICAL' ? 'bg-red-500 text-white shadow-md' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}>Critical ({cases.filter(c => c.severity === CaseSeverity.CRITICAL).length})</button>
+                        <button onClick={() => setFilter('COMPLETED')} className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${filter === 'COMPLETED' ? 'bg-emerald-600 text-white shadow-md' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>Completed ({cases.filter(c => c.status === CaseStatus.APPROVED || c.status === CaseStatus.COMPLETED).length})</button>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto pb-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -857,8 +1022,23 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                         filteredCases.map((c, index) => {
                             const patient = patients.find(p => p.id === c.patientId);
                             return (
-                                <div key={c.id} onClick={() => setSelectedCase(c)} className={`p-4 border-b border-slate-100 cursor-pointer transition-all duration-300 animate-in fade-in slide-in-from-right-4 hover:bg-slate-50 ${selectedCase?.id === c.id ? 'bg-emerald-50 border-emerald-200 shadow-inner' : ''}`} style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
-                                    <div className="flex justify-between items-start mb-1"><span className="font-bold text-slate-800">{c.patientName}</span><span className="text-xs font-medium text-slate-400">{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
+                                <div key={c.id} onClick={() => setSelectedCase(c)} className={`p-4 border-b border-slate-100 cursor-pointer transition-all duration-300 animate-in fade-in slide-in-from-right-4 hover:bg-slate-50 group relative ${selectedCase?.id === c.id ? 'bg-emerald-50 border-emerald-200 shadow-inner' : ''}`} style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}>
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="font-bold text-slate-800 line-clamp-1 flex-1 pr-2">{c.patientName}</span>
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                            <span className="text-xs font-medium text-slate-400">{new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            {onDeleteCase && (
+                                                <button
+                                                    onClick={(e) => handleDeleteCaseClick(c.id, e)}
+                                                    title="Dismiss case from queue"
+                                                    className="p-1 hover:bg-red-50 text-slate-300 hover:text-red-600 rounded transition"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <div className="flex items-center flex-wrap gap-2 text-[11px] text-slate-500 mb-2 font-mono bg-slate-50 inline-flex px-2 py-0.5 rounded border border-slate-100">
                                         <span>{c.patientId}</span><span>•</span><span>{patient?.age || '45'} Yrs</span>
                                     </div>
@@ -995,7 +1175,17 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ user, cases, patients
                                         <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0 flex flex-col sm:flex-row gap-3">
                                             <button onClick={handleApproveClick} disabled={selectedCase.status === CaseStatus.APPROVED} className="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/20 text-sm md:text-base"><CheckCircle size={18} />{selectedCase.status === CaseStatus.APPROVED ? 'Approved & Locked' : 'Approve & Dispatch'}</button>
                                             <button onClick={() => onUpdateStatus(selectedCase.id, CaseStatus.REJECTED)} disabled={selectedCase.status === CaseStatus.APPROVED} className="w-full sm:w-auto px-4 py-2 sm:py-0 border border-red-200 text-red-600 bg-white rounded-lg hover:bg-red-50 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base">Reject</button>
+                                            {onDeleteCase && (
+                                                <button
+                                                    onClick={() => handleDeleteCaseClick(selectedCase.id)}
+                                                    className="w-full sm:w-auto px-4 py-2 sm:py-0 border border-slate-200 text-slate-600 bg-white rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition text-sm md:text-base flex items-center justify-center gap-1.5"
+                                                    title="Dismiss / remove case from queue"
+                                                >
+                                                    <Trash2 size={16} /> Dismiss Case
+                                                </button>
+                                            )}
                                         </div>
+
                                     </div>
                                 </div>
                             </div>
