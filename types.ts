@@ -1,8 +1,7 @@
 
 export enum UserRole {
   PATIENT = 'PATIENT',
-  DOCTOR = 'DOCTOR',
-  IVR_SIMULATION = 'IVR_SIMULATION'
+  DOCTOR = 'DOCTOR'
 }
 
 export enum CaseSeverity {
@@ -33,7 +32,7 @@ export interface MedicalCase {
   patientId: string;
   patientName: string;
   timestamp: string;
-  mode: 'IVR' | 'ONLINE';
+  mode?: 'ONLINE' | 'VOICE';
   symptoms: string[];
   aiDiagnosis: string;
   severity: CaseSeverity;
@@ -219,13 +218,4 @@ export interface User {
   gender?: string;
 }
 
-export interface OfflineSession {
-  session_type: string;
-  transcript: string;
-  risk_level: CaseSeverity;
-  doctor_joined: boolean;
-  medicine_requested: boolean;
-  delivery_confirmed: boolean;
-  address: any;
-  timestamp: string;
-}
+

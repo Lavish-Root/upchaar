@@ -4,10 +4,10 @@ import {
     Users, AlertTriangle, Truck, Activity, CheckCircle, XCircle,
     FileText, Search, Clock, Play, Pause, MapPin, Brain, LogOut, Save, ShieldAlert,
     Edit2, Package, User, Phone, Briefcase, Camera, Loader2, Upload, Leaf, Plus, Star, Sparkles, Zap, Heart, Info,
-    Video, Navigation, Server, Database, Globe, ZapOff, Wifi, WifiOff, Key,
+    Video, Navigation,
     MessageSquare, Stethoscope, Trash2, RotateCcw
 } from 'lucide-react';
-import { MedicalCase, CaseSeverity, CaseStatus, PatientProfile, User as UserType, HomeRemedy, HealthTip, WellnessActivity, Season, OfflineSession } from '../types';
+import { MedicalCase, CaseSeverity, CaseStatus, PatientProfile, User as UserType, HomeRemedy, HealthTip, WellnessActivity, Season } from '../types';
 import PredictiveAlerts from './PredictiveAlerts';
 import TipCommentsModal from './TipCommentsModal';
 import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
@@ -29,7 +29,6 @@ interface DoctorDashboardProps {
     cases: MedicalCase[];
     patients?: PatientProfile[];
     stats: any;
-    offlineSessions?: OfflineSession[];
     onUpdateStatus: (caseId: string, status: CaseStatus, prescription?: string, notes?: string) => void;
     onDeleteCase?: (caseId: string) => void;
     onResetCases?: () => void;
@@ -41,13 +40,12 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     cases,
     patients = [],
     stats,
-    offlineSessions = [],
     onUpdateStatus,
     onDeleteCase,
     onResetCases,
     onLogout
 }) => {
-    const [currentView, setCurrentView] = useState<'ACTIVE_CASES' | 'PREDICTIVE' | 'PROFILE' | 'WELLNESS_MGMT' | 'IVR_MONITORING'>('ACTIVE_CASES');
+    const [currentView, setCurrentView] = useState<'ACTIVE_CASES' | 'PREDICTIVE' | 'PROFILE' | 'WELLNESS_MGMT'>('ACTIVE_CASES');
     const [filter, setFilter] = useState<'ALL' | 'CRITICAL' | 'PENDING' | 'COMPLETED'>('ALL');
 
     // Fix: Derive filteredCases from cases and filter state to resolve 'Cannot find name' errors
@@ -397,14 +395,6 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             >
                 <Brain size={24} />
             </button>
-            {/* NEW IVR MONITORING TAB */}
-            <button
-                onClick={() => setCurrentView('IVR_MONITORING')}
-                className={`p-3 rounded-xl transition ${currentView === 'IVR_MONITORING' ? 'bg-blue-500 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-                title="Offline IVR Monitoring"
-            >
-                <Server size={24} />
-            </button>
             <button
                 onClick={() => setCurrentView('WELLNESS_MGMT')}
                 className={`p-3 rounded-xl transition ${currentView === 'WELLNESS_MGMT' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/50' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
@@ -414,10 +404,10 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             </button>
             <button
                 onClick={() => setCurrentView('PROFILE')}
-                className={`flex flex-col items-center gap-1 transition-all duration-300 ${currentView === 'PROFILE' ? 'text-blue-600 -translate-y-1' : 'text-slate-400 hover:text-blue-500'}`}
+                className={`p-3 rounded-xl transition ${currentView === 'PROFILE' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                title="Doctor Profile"
             >
-                <div className={`p-2 rounded-xl ${currentView === 'PROFILE' ? 'bg-blue-100 shadow-sm' : ''}`}><User size={20} /></div>
-                <span className="text-[10px] font-bold">Profile</span>
+                <User size={24} />
             </button>
         </div>
     );
@@ -440,13 +430,6 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             >
                 <div className={`p-2 rounded-xl ${currentView === 'PREDICTIVE' ? 'bg-purple-100 shadow-sm' : ''}`}><Brain size={20} /></div>
                 <span className="text-[10px] font-bold">Predictive</span>
-            </button>
-            <button
-                onClick={() => setCurrentView('IVR_MONITORING')}
-                className={`flex flex-col items-center gap-1 transition-all duration-300 ${currentView === 'IVR_MONITORING' ? 'text-blue-600 -translate-y-1' : 'text-slate-400 hover:text-blue-500'}`}
-            >
-                <div className={`p-2 rounded-xl ${currentView === 'IVR_MONITORING' ? 'bg-blue-100 shadow-sm' : ''}`}><Server size={20} /></div>
-                <span className="text-[10px] font-bold">IVR</span>
             </button>
             <button
                 onClick={() => setCurrentView('WELLNESS_MGMT')}
@@ -712,208 +695,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     );
 
 
-    // --- NEW ADD-ON MODULE: Offline IVR Monitoring ---
-    const renderIVRMonitoring = () => {
-        // Isolated Mock Logs for IVR Service
-        const ivr_service_logs = [
-            { id: 'LOG-001', type: 'INFO', message: 'Calling AI Engine Heartbeat: Normal', timestamp: new Date(Date.now() - 5000).toISOString() },
-            { id: 'LOG-002', type: 'INFO', message: 'OTP AI Generator: Ready', timestamp: new Date(Date.now() - 10000).toISOString() },
-            { id: 'LOG-003', type: 'ERROR', message: 'STT Fallback triggered: Background noise high', timestamp: new Date(Date.now() - 600000).toISOString() },
-            { id: 'LOG-004', type: 'WARNING', message: 'Address resolution high latency (2.1s)', timestamp: new Date(Date.now() - 1200000).toISOString() },
-        ];
 
-        const stats_risk_dist = { NORMAL: 0, MILD: 0, MODERATE: 0, CRITICAL: 0 };
-        offlineSessions.forEach(s => {
-            if (s.risk_level) stats_risk_dist[s.risk_level]++;
-        });
 
-        const otp_success_rate = offlineSessions.length > 0
-            ? Math.round((offlineSessions.filter(s => s.delivery_confirmed).length / offlineSessions.length) * 100)
-            : 100;
 
-        return (
-            <div className="h-full flex flex-col md:flex-row bg-slate-50 overflow-hidden">
-                <div className="hidden md:flex h-full"><Sidebar /></div>
-                <div className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-0">
-                    <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center animate-in fade-in slide-in-from-top-4 duration-500">
-                        <div className="flex items-center gap-2">
-                            <button className="md:hidden p-1.5 -ml-2 text-slate-500 hover:bg-slate-100 rounded-full transition" onClick={() => setCurrentView('ACTIVE_CASES')}>
-                                <svg xmlns="http://www.w0.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-                            </button>
-                            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-                                <Server size={20} className="text-blue-600" /> Offline IVR Monitoring Dashboard
-                            </h2>
-                        </div>
-                        <HeaderAvatar />
-                    </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
-                        {/* 1. IVR System Health */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Calling AI Status</h3>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                                        <Wifi size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold text-slate-800">Operational</p>
-                                        <p className="text-xs text-emerald-600 font-medium">Heartbeat: Active</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">OTP AI Status</h3>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                                        <Key size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold text-slate-800">Operational</p>
-                                        <p className="text-xs text-blue-600 font-medium">Generator: Ready</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Gateway Load</h3>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-600">
-                                        <Activity size={24} />
-                                    </div>
-                                    <div>
-                                        <p className="text-lg font-bold text-slate-800">Low</p>
-                                        <p className="text-xs text-slate-500 font-medium">Traffic: 12.2 kbps</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            {/* 2. Call Activity Metrics */}
-                            <div className="lg:col-span-1 space-y-6">
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-full">
-                                    <h3 className="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                        <Globe size={18} className="text-blue-500" /> Activity Metrics (24h)
-                                    </h3>
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                                            <span className="text-sm text-slate-600 font-medium">Total Offline Calls</span>
-                                            <span className="text-lg font-black text-slate-800">{offlineSessions.length}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                                            <span className="text-sm text-slate-600 font-medium">Active Calls</span>
-                                            <span className="text-lg font-black text-emerald-600">0</span>
-                                        </div>
-                                        <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                                            <span className="text-sm text-slate-600 font-medium">Avg Call Duration</span>
-                                            <span className="text-lg font-black text-slate-800">2:45m</span>
-                                        </div>
-                                        <div className="flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100">
-                                            <span className="text-sm text-red-700 font-medium">Dropped/Failed</span>
-                                            <span className="text-lg font-black text-red-700">1</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 3. Error Monitoring & AI Performance */}
-                            <div className="lg:col-span-2 space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                            <ShieldAlert size={18} className="text-red-500" /> System Alerts & Logs
-                                        </h3>
-                                        <div className="space-y-3 h-[180px] overflow-y-auto pr-2">
-                                            {ivr_service_logs.map(log => (
-                                                <div key={log.id} className="text-[10px] p-2 bg-slate-50 rounded border border-slate-100 font-mono">
-                                                    <div className="flex justify-between mb-1">
-                                                        <span className={`font-black ${log.type === 'ERROR' ? 'text-red-600' : log.type === 'WARNING' ? 'text-amber-600' : 'text-blue-600'}`}>{log.type}</span>
-                                                        <span className="text-slate-400">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                                                    </div>
-                                                    <p className="text-slate-700">{log.message}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                        <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                            <Brain size={18} className="text-purple-500" /> AI Flow Performance
-                                        </h3>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <div className="flex justify-between text-[10px] font-bold uppercase text-slate-400 mb-1">
-                                                    <span>OTP Verification Success</span>
-                                                    <span>{otp_success_rate}%</span>
-                                                </div>
-                                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                                    <div className="bg-blue-500 h-full transition-all" style={{ width: `${otp_success_rate}%` }}></div>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <div className="flex justify-between text-[10px] font-bold uppercase text-slate-400 mb-1">
-                                                    <span>Doctor Escalation Rate</span>
-                                                    <span>{offlineSessions.length > 0 ? Math.round((offlineSessions.filter(s => s.doctor_joined).length / offlineSessions.length) * 100) : 0}%</span>
-                                                </div>
-                                                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                                    <div className="bg-red-500 h-full transition-all" style={{ width: `${offlineSessions.length > 0 ? (offlineSessions.filter(s => s.doctor_joined).length / offlineSessions.length) * 100 : 0}%` }}></div>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2 pt-2">
-                                                <div className="bg-slate-50 p-2 rounded text-center">
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Critical (IVR)</p>
-                                                    <p className="text-sm font-black text-red-600">{stats_risk_dist.CRITICAL}</p>
-                                                </div>
-                                                <div className="bg-slate-50 p-2 rounded text-center">
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase">Mild (IVR)</p>
-                                                    <p className="text-sm font-black text-emerald-600">{stats_risk_dist.MILD + stats_risk_dist.NORMAL}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 4. Sample Call Flow (Anonymized) */}
-                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                    <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                        <FileText size={18} className="text-slate-400" /> Recent Anonymized Call Summaries
-                                    </h3>
-                                    <div className="space-y-4">
-                                        {offlineSessions.length === 0 ? (
-                                            <div className="text-center py-10 text-slate-400 text-xs italic">
-                                                No offline call sessions recorded yet.
-                                            </div>
-                                        ) : (
-                                            offlineSessions.slice(0, 3).map((session, i) => (
-                                                <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Session ID: {session.session_type === 'offline_call' ? 'ANON-GSM-' + i : 'UNKNOWN'}</span>
-                                                        <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase ${session.risk_level === 'CRITICAL' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{session.risk_level}</span>
-                                                    </div>
-                                                    <p className="text-xs text-slate-600 line-clamp-2 italic leading-relaxed">
-                                                        {session.transcript.substring(0, 150)}...
-                                                    </p>
-                                                    <div className="mt-3 flex gap-3">
-                                                        {session.doctor_joined && <span className="text-[9px] font-bold text-red-600 flex items-center gap-1 uppercase"><ShieldAlert size={10} /> Dr. Joined</span>}
-                                                        {session.medicine_requested && <span className="text-[9px] font-bold text-blue-600 flex items-center gap-1 uppercase"><Truck size={10} /> Medicine Request</span>}
-                                                        {session.delivery_confirmed && <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-1 uppercase"><CheckCircle size={10} /> Delivery Confirmed</span>}
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <MobileBottomNav />
-            </div>
-        );
-    };
 
     // --- EXISTING DASHBOARDS (FROZEN CLINICAL FUNCTIONALITY) ---
     if (currentView === 'WELLNESS_MGMT') return renderWellnessMgmt();
-    if (currentView === 'IVR_MONITORING') return renderIVRMonitoring();
 
     if (currentView === 'PREDICTIVE') {
         return (
@@ -1048,7 +836,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                                                 c.severity === 'MILD' ? 'bg-emerald-100 text-emerald-800' :
                                                     'bg-slate-100 text-slate-600'
                                             }`}>{c.severity}</span>
-                                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest border shrink-0 ${c.mode === 'IVR' ? 'bg-purple-50 text-purple-700 border-purple-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>{c.mode}</span>
+                                        <span className="text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-widest border shrink-0 bg-blue-50 text-blue-700 border-blue-100">{c.mode || 'ONLINE'}</span>
                                         {c.status === 'APPROVED' && <span className="text-[10px] text-emerald-600 font-bold ml-auto flex items-center gap-1 shrink-0"><CheckCircle size={10} />Sent</span>}
                                     </div>
                                     <p className="text-xs text-slate-600 line-clamp-1 italic">{c.aiDiagnosis}</p>
@@ -1087,7 +875,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                             </div>
                             <div className="flex-1 grid md:grid-cols-2 gap-4 min-h-0">
                                 <div className="flex flex-col gap-4 overflow-hidden">
-                                    {selectedCase.mode === 'IVR' && selectedCase.audioUrl && (
+                                    {selectedCase.audioUrl && (
                                         <div className="bg-slate-900 rounded-xl p-4 text-white shadow-lg shrink-0">
                                             <div className="flex items-center justify-between mb-2"><span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Voice Recording</span><span className="text-xs font-mono text-emerald-400">00:45 / 00:45</span></div>
                                             <div className="flex items-center gap-4"><button onClick={toggleAudio} className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center hover:bg-emerald-400 transition">{isPlaying ? <Pause className="fill-current" /> : <Play className="fill-current ml-1" />}</button><div className="flex-1"><div className="h-10 flex items-center gap-0.5 opacity-50">{[...Array(20)].map((_, i) => (<div key={i} className="flex-1 bg-white rounded-full" style={{ height: `${Math.random() * 100}%` }}></div>))}</div></div></div>
@@ -1095,7 +883,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-1 overflow-hidden">
-                                        <div className="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center"><h3 className="font-semibold text-slate-700 text-sm flex items-center gap-2"><FileText size={16} /> Transcript</h3><span className="text-xs text-slate-400">AI-Transcribed • {selectedCase.mode === 'IVR' ? 'Audio-to-Text' : 'Chat Log'}</span></div>
+                                        <div className="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center"><h3 className="font-semibold text-slate-700 text-sm flex items-center gap-2"><FileText size={16} /> Transcript</h3><span className="text-xs text-slate-400">AI-Transcribed • {selectedCase.audioUrl ? 'Audio-to-Text' : 'Chat Log'}</span></div>
                                         <div className="p-4 overflow-y-auto flex-1 space-y-4">{selectedCase.transcript.length > 0 ? (selectedCase.transcript.map((msg, idx) => (<div key={idx} className={`flex ${msg.role === 'model' ? 'justify-start' : 'justify-end'}`}><div className={`max-w-[85%] p-3 rounded-lg text-sm ${msg.role === 'model' ? 'bg-slate-100 text-slate-700 rounded-tl-none' : 'bg-blue-50 text-blue-900 border border-blue-100 rounded-tr-none'}`}><span className="block text-[10px] font-bold mb-1 opacity-50 uppercase">{msg.role === 'model' ? 'AI Assistant' : 'Patient'}</span>{highlightSymptoms(msg.text)}</div></div>))) : (<p className="text-slate-400 text-center italic text-sm mt-10">No transcript available.</p>)}</div>
 
                                         {selectedCase.severity === CaseSeverity.CRITICAL && (

@@ -243,7 +243,7 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-sm outline-none font-medium"
                 >
                   <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning & Triage)</option>
-                  <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fastest IVR & Doctor Chat)</option>
+                  <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fastest Realtime & Doctor Chat)</option>
                   <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Multilingual)</option>
                   <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
                   <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>

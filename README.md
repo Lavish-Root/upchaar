@@ -22,7 +22,7 @@ To further enhance accessibility and continuity of care, AI Upchaar integrates:
 
 Designed with a rural-first approach, AI Upchaar focuses on reducing treatment delays, minimizing travel burden, and improving early-stage diagnosis in regions with limited medical infrastructure.
 
-Additionally, the system explores an offline accessibility layer compatible with basic keypad phones, extending healthcare access to populations without reliable internet connectivity (details available in the repository).
+Additionally, the system provides multi-lingual voice and chat interaction, extending healthcare access to diverse populations across rural regions.
 
 One-Line Summary (Optional)
 

@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../types';
 import { loginDoctor, loginPatient } from '../services/authService';
-import { Stethoscope, User as UserIcon, Lock, ArrowRight, Loader2, ShieldCheck, Phone, Eye, EyeOff, AlertTriangle, Key, Cpu } from 'lucide-react';
+import { Stethoscope, User as UserIcon, Lock, ArrowRight, Loader2, ShieldCheck, Eye, EyeOff, AlertTriangle, Key, Cpu } from 'lucide-react';
 import Logo from './Logo';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: User) => void;
-  onIVRSelect: () => void;
   onOpenKeyModal?: () => void;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, onOpenKeyModal }) => {
+const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onOpenKeyModal }) => {
   const [activeRole, setActiveRole] = useState<UserRole>(UserRole.PATIENT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -239,18 +238,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <button
-              onClick={onIVRSelect}
-              className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-emerald-600 transition group"
-            >
-              <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-emerald-100 flex items-center justify-center transition">
-                <Phone className="w-4 h-4" />
-              </div>
-              Simulate Offline IVR Call
-            </button>
-
-            {onOpenKeyModal && (
+          {onOpenKeyModal && (
+            <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center text-center animate-in fade-in slide-in-from-bottom-8 duration-700">
               <button
                 type="button"
                 onClick={onOpenKeyModal}
@@ -259,8 +248,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onIVRSelect, 
                 <Cpu className="w-3.5 h-3.5 text-emerald-600" />
                 Configure AI / Groq Key
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

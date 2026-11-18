@@ -36,7 +36,7 @@
       "patientId": "P-101",
       "patientName": "Ramesh Kumar",
       "timestamp": "2026-09-01T10:30:00.000Z",
-      "mode": "IVR",
+      "mode": "ONLINE",
       "symptoms": ["High Fever", "Chills", "Body Ache"],
       "aiDiagnosis": "Likely Viral Fever or Malaria",
       "severity": "MODERATE",
@@ -58,6 +58,5 @@
       "deliveryEta": "Pending Dispatch"
     }
   ],
-  "appointments": [],
-  "offlineSessions": []
+  "appointments": []
 }

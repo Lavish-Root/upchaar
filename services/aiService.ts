@@ -279,7 +279,7 @@ export class UniversalChatSession {
     // 2. Try Gemini
     if (config.geminiApiKey) {
       try {
-        const prompt = \`CONVERSATION HISTORY:\n\${this.history.map(h => \`\${h.role}: \${h.text}\`).join('\n')}\n\nPATIENT: \${userText}\n\nDOCTOR RESPONSE:\`;
+        const prompt = `CONVERSATION HISTORY:\n${this.history.map(h => `${h.role}: ${h.text}`).join('\n')}\n\nPATIENT: ${userText}\n\nDOCTOR RESPONSE:`;
         const reply = await callGeminiAPI(prompt, DOCTOR_SYSTEM_INSTRUCTION, false);
         this.history.push({ role: 'assistant', text: reply });
         return { text: reply };
@@ -304,9 +304,9 @@ export const startUniversalChat = (): UniversalChatSession => {
  */
 export const analyzeUniversalCase = async (transcript: string): Promise<TriageResult> => {
   const config = getAIConfig();
-  const prompt = \`You are a Senior Chief Medical Officer. Perform medical triage on this consultation transcript.
+  const prompt = `You are a Senior Chief Medical Officer. Perform medical triage on this consultation transcript.
 TRANSCRIPT:
-\${transcript}
+${transcript}
 
 Return a STRICT JSON object matching this schema:
 {
@@ -316,7 +316,7 @@ Return a STRICT JSON object matching this schema:
   "summary": "Brief clinical summary of patient condition",
   "homeRemedies": ["Remedy 1 with simple ingredients", "Remedy 2 with instructions"],
   "careSuggestions": "Practical care and hygiene instructions"
-}\`;
+}`;
 
   // Try Groq
   if (config.groqApiKey || DEFAULT_GROQ_KEY) {
@@ -349,91 +349,12 @@ Return a STRICT JSON object matching this schema:
 };
 
 /**
- * Controller for IVR Call Simulation Flow
- */
-export const getUniversalCallingAIResponse = async (
-  history: { role: string; text: string }[],
-  input: string,
-  currentState: string
-): Promise<{
-  responseText: string;
-  nextState: string;
-  riskLevel?: CaseSeverity;
-  medicineRequested?: boolean;
-  addressData?: any;
-  mobileNumber?: string;
-  otpTrigger?: boolean;
-}> => {
-  const config = getAIConfig();
-  const prompt = \`
-Act as PraanSewa Medical Call Controller for Rural Helpline (IVR).
-CURRENT STATE: \${currentState}
-PATIENT INPUT: "\${input}"
-CONVERSATION HISTORY: \${JSON.stringify(history)}
-
-TASK:
-1. Detect patient language (Hindi / Punjabi / English).
-2. Determine next IVR State from: [GREETING, SYMPTOM_COLLECTION, RISK_ASSESSMENT, TREATMENT_CHOICE, ADDRESS_COLLECTION, ADDRESS_CONFIRMATION, MOBILE_NUMBER_COLLECTION, OTP_VERIFICATION, DELIVERY_CONFIRMATION, DOCTOR_CONNECTED, END].
-3. Determine if medicine was requested, address details, mobile number, or if severe condition requires doctor connection.
-4. Provide immediate spoken response in patient's language.
-
-Return JSON ONLY:
-{
-  "responseText": "Spoken text to patient",
-  "nextState": "Next state string",
-  "riskLevel": "NORMAL" | "MILD" | "MODERATE" | "CRITICAL",
-  "medicineRequested": true | false,
-  "addressData": null | { "village": "...", "house": "...", "landmark": "..." },
-  "mobileNumber": null | "10 digit number",
-  "otpTrigger": true | false
-}
-\`;
-
-  if (config.groqApiKey || DEFAULT_GROQ_KEY) {
-    try {
-      const messages = [
-        { role: 'system' as const, content: DOCTOR_SYSTEM_INSTRUCTION },
-        { role: 'user' as const, content: prompt }
-      ];
-      const raw = await callGroqAPI(messages, 'openai/gpt-oss-20b', 0.1, true);
-      return JSON.parse(sanitizeJsonResponse(raw));
-    } catch (e) {
-      console.warn("Groq IVR fallback...", e);
-    }
-  }
-
-  if (config.geminiApiKey) {
-    try {
-      const raw = await callGeminiAPI(prompt, DOCTOR_SYSTEM_INSTRUCTION, true);
-      return JSON.parse(sanitizeJsonResponse(raw));
-    } catch (e) {
-      console.warn("Gemini IVR fallback...", e);
-    }
-  }
-
-  // Local IVR Fallback State Machine
-  return handleLocalIVRFlow(input, currentState);
-};
-
-/**
- * OTP Spoken Generator
- */
-export const getUniversalOTPResponse = async (): Promise<{ otp: string; spokenText: string }> => {
-  const otp = Math.floor(1000 + Math.random() * 9000).toString();
-  const digitsSpoken = otp.split('').join(' . ');
-  return {
-    otp,
-    spokenText: \`Aapka 4-digit verification code hai: \${digitsSpoken}. Kripya is code ko dohraiye.\`
-  };
-};
-
-/**
  * Predictive Health Risk Generator (LPHIM)
  */
 export const generateUniversalHealthRisks = async (patients: PatientProfile[]): Promise<RiskPrediction[]> => {
   const config = getAIConfig();
-  const prompt = \`Analyze these rural patient health profiles and predict risk levels (HIGH, MEDIUM, LOW) for seasonal diseases (Monsoon/Winter flu, dengue, heatstroke, diabetes exacerbation):
-PATIENTS: \${JSON.stringify(patients)}
+  const prompt = `Analyze these rural patient health profiles and predict risk levels (HIGH, MEDIUM, LOW) for seasonal diseases (Monsoon/Winter flu, dengue, heatstroke, diabetes exacerbation):
+PATIENTS: ${JSON.stringify(patients)}
 
 Return a JSON array of objects:
 [
@@ -446,7 +367,7 @@ Return a JSON array of objects:
     "suggestedAction": "Action for ASHA worker or doctor",
     "draftMessage": "Friendly SMS/WhatsApp alert in Hindi/English to send to patient"
   }
-]\`;
+]`;
 
   if (config.groqApiKey || DEFAULT_GROQ_KEY) {
     try {
@@ -481,9 +402,9 @@ Return a JSON array of objects:
       patientName: p.name,
       riskLevel,
       predictedCondition: riskLevel === 'HIGH' ? 'Cardiovascular & Seasonal Flu Complication' : 'Seasonal Upper Respiratory Infection',
-      reasoning: \`Patient is \${p.age} years old with history of \${p.medicalHistory.join(', ') || 'seasonal vulnerability'}. Approaching weather changes pose heightened risk.\`,
+      reasoning: `Patient is ${p.age} years old with history of ${p.medicalHistory.join(', ') || 'seasonal vulnerability'}. Approaching weather changes pose heightened risk.`,
       suggestedAction: riskLevel === 'HIGH' ? 'Immediate home visit by ASHA worker and BP/Glucose check' : 'Preventive dietary advisory & telemedicine follow-up',
-      draftMessage: \`Namaste \${p.name} ji, mausam badal raha hai. Kripya apni niyamit dawa samay par lein aur thand se bachein. Kisi takleef par 1800-AI-CARE par call karein.\`
+      draftMessage: `Namaste ${p.name} ji, mausam badal raha hai. Kripya apni niyamit dawa samay par lein aur thand se bachein. Kisi takleef par 1800-AI-CARE par call karein.`
     };
   });
 };
@@ -493,22 +414,22 @@ Return a JSON array of objects:
  */
 export const trainUniversalAiModel = async (cumulativeDataset: any[], modelConfig: any): Promise<ModelHistoryEntry> => {
   const config = getAIConfig();
-  const prompt = \`Simulate statistical machine learning training metrics for a rural clinical dataset (Version: \${modelConfig.version}, Algorithm: \${modelConfig.algorithm}).
-Dataset size: \${cumulativeDataset.length} records.
+  const prompt = `Simulate statistical machine learning training metrics for a rural clinical dataset (Version: ${modelConfig.version}, Algorithm: ${modelConfig.algorithm}).
+Dataset size: ${cumulativeDataset.length} records.
 
 Return JSON ONLY:
 {
-  "version": "\${modelConfig.version}",
-  "timestamp": "\${new Date().toISOString()}",
+  "version": "${modelConfig.version}",
+  "timestamp": "${new Date().toISOString()}",
   "metrics": {
     "accuracy": 0.94,
     "precision": 0.92,
     "recall": 0.95,
     "f1Score": 0.93,
-    "recordsAnalyzed": \${Math.max(cumulativeDataset.length * 10, 150)},
-    "lastTrained": "\${new Date().toLocaleDateString()}",
-    "version": "\${modelConfig.version}",
-    "algorithmUsed": "\${modelConfig.algorithm || 'Random Forest Classifier'}"
+    "recordsAnalyzed": ${Math.max(cumulativeDataset.length * 10, 150)},
+    "lastTrained": "${new Date().toLocaleDateString()}",
+    "version": "${modelConfig.version}",
+    "algorithmUsed": "${modelConfig.algorithm || 'Random Forest Classifier'}"
   },
   "trends": [
     { "category": "Viral Fever", "count": 64, "growth": 18, "description": "Increasing with post-monsoon water logging" },
@@ -519,7 +440,7 @@ Return JSON ONLY:
     [45, 3],
     [4, 48]
   ]
-}\`;
+}`;
 
   if (config.groqApiKey || DEFAULT_GROQ_KEY) {
     try {
@@ -640,66 +561,4 @@ function generateLocalTriage(transcript: string): TriageResult {
   };
 }
 
-function handleLocalIVRFlow(input: string, currentState: string) {
-  const lower = input.toLowerCase();
 
-  if (currentState === 'GREETING' || currentState === 'IDLE') {
-    return {
-      responseText: "Namaste! Main PraanSewa bol raha hoon. Bataiye aapko kya takleef hai? Bukhar, khansi ya koi aur samasya?",
-      nextState: 'SYMPTOM_COLLECTION',
-      riskLevel: CaseSeverity.NORMAL
-    };
-  }
-
-  if (currentState === 'SYMPTOM_COLLECTION') {
-    if (/chest pain|chhati|heart|saans|emergency/i.test(lower)) {
-      return {
-        responseText: "Aapke lakshan gambhir hain. Kripya ghabrayein nahi, main turant duty doctor ko call par connect kar raha hoon.",
-        nextState: 'DOCTOR_CONNECTED',
-        riskLevel: CaseSeverity.CRITICAL
-      };
-    }
-    return {
-      responseText: "Samajh gaya. Aapke lakshano ke liye kya aap dawa ghar mangwana chahenge ya gharelu nuskhe prefer karenge?",
-      nextState: 'TREATMENT_CHOICE',
-      riskLevel: CaseSeverity.MILD
-    };
-  }
-
-  if (currentState === 'TREATMENT_CHOICE') {
-    if (/dawa|medicine|dawai|1/i.test(lower)) {
-      return {
-        responseText: "Dawa delivery ke liye kripya apna gaon, plot number ya landmark batayein.",
-        nextState: 'ADDRESS_COLLECTION',
-        medicineRequested: true
-      };
-    }
-    return {
-      responseText: "Aap adrak-tulsi ka kadha din mein 2 baar lein aur aaram karein. Dawa mangwane ke liye kabhi bhi call karein. Dhanyawad.",
-      nextState: 'END',
-      medicineRequested: false
-    };
-  }
-
-  if (currentState === 'ADDRESS_COLLECTION') {
-    return {
-      responseText: `Aapka address note ho gaya hai: ${input}. Kripya apna 10-digit mobile number batayein, isi par OTP aayega.`,
-      nextState: 'MOBILE_NUMBER_COLLECTION',
-      addressData: { fullAddress: input }
-    };
-  }
-
-  if (currentState === 'MOBILE_NUMBER_COLLECTION') {
-    return {
-      responseText: "OTP generate kiya ja raha रहा है...",
-      nextState: 'OTP_VERIFICATION',
-      mobileNumber: input,
-      otpTrigger: true
-    };
-  }
-
-  return {
-    responseText: "Dhanyawad. Aapka case confirm ho gaya hai.",
-    nextState: 'END'
-  };
-}

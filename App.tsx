@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Stethoscope, User as UserIcon, LayoutGrid, LogOut, Loader2, Key, Zap, Sparkles, Shield } from 'lucide-react';
+import { Stethoscope, User as UserIcon, LayoutGrid, LogOut, Loader2, Key, Zap, Sparkles, Shield } from 'lucide-react';
 import PatientPortal from './components/PatientPortal';
 import DoctorDashboard from './components/DoctorDashboard';
-import IVRSimulator from './components/IVRSimulator';
 import LoginScreen from './components/LoginScreen';
 import ApiKeyModal from './components/ApiKeyModal';
 import Logo from './components/Logo';
 import { MOCK_CASES, MOCK_STATS, MOCK_PATIENTS } from './services/mockData';
-import { MedicalCase, CaseStatus, User, UserRole, Appointment, OfflineSession } from './types';
+import { MedicalCase, CaseStatus, User, UserRole, Appointment } from './types';
 import { logout, getSession } from './services/authService';
 import { getAIConfig } from './services/aiService';
 
 function App() {
-  const [currentView, setCurrentView] = useState<'LOGIN' | 'PATIENT' | 'IVR' | 'DOCTOR'>('LOGIN');
+  const [currentView, setCurrentView] = useState<'LOGIN' | 'PATIENT' | 'DOCTOR'>('LOGIN');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
@@ -68,15 +67,6 @@ function App() {
 
   const [stats, setStats] = useState(MOCK_STATS);
 
-  const [offlineSessions, setOfflineSessions] = useState<OfflineSession[]>(() => {
-    try {
-      const saved = localStorage.getItem('ai_upchaar_offline_sessions');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
   // Sync to localStorage
   useEffect(() => {
     try {
@@ -89,12 +79,6 @@ function App() {
       localStorage.setItem('ai_upchaar_appointments', JSON.stringify(appointments));
     } catch (e) {}
   }, [appointments]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('ai_upchaar_offline_sessions', JSON.stringify(offlineSessions));
-    } catch (e) {}
-  }, [offlineSessions]);
 
   // Check for existing session on app start
   useEffect(() => {
@@ -123,16 +107,6 @@ function App() {
       totalCases: prev.totalCases + 1,
       criticalPending: newCase.severity === 'CRITICAL' ? prev.criticalPending + 1 : prev.criticalPending
     }));
-  };
-
-  /**
-   * 📞 NEW OFFLINE SESSION HANDLER
-   * Stores data in the isolated offlineSessions collection.
-   * Fixed parameter typing with OfflineSession.
-   */
-  const handleSaveOfflineSession = (sessionData: OfflineSession) => {
-    setOfflineSessions(prev => [sessionData, ...prev]);
-    console.log("Offline Storage: New IVR Session Recorded.", sessionData);
   };
 
   const handleBookAppointment = (newAppt: Appointment) => {
@@ -264,11 +238,6 @@ function App() {
                     </button>
                   </div>
                 )}
-                {!currentUser && currentView === 'IVR' && (
-                  <button onClick={() => setCurrentView('LOGIN')} className="text-sm font-medium text-slate-500 hover:text-emerald-600">
-                    Back to Login
-                  </button>
-                )}
               </div>
             </div>
           </div>
@@ -279,7 +248,6 @@ function App() {
         {currentView === 'LOGIN' && (
           <LoginScreen
             onLoginSuccess={handleLoginSuccess}
-            onIVRSelect={() => setCurrentView('IVR')}
             onOpenKeyModal={() => setIsKeyModalOpen(true)}
           />
         )}
@@ -293,14 +261,12 @@ function App() {
             onLogout={handleLogout}
           />
         )}
-        {currentView === 'IVR' && <IVRSimulator onSaveOfflineSession={handleSaveOfflineSession} />}
         {currentView === 'DOCTOR' && currentUser && (
           <DoctorDashboard
             user={currentUser}
             cases={cases}
             patients={MOCK_PATIENTS}
             stats={stats}
-            offlineSessions={offlineSessions}
             onUpdateStatus={handleUpdateStatus}
             onDeleteCase={handleDeleteCase}
             onResetCases={handleResetCases}
