@@ -1,13 +1,11 @@
 /**
  * AI Service Adaptor / Backward-compatibility Gateway
- * Directs all triage, chat, IVR, predictions, and hospital lookups to the Universal AI Engine and OSM Geolocation.
+ * Directs all triage, chat, predictions, and hospital lookups to the Universal AI Engine and OSM Geolocation.
  */
 
 import {
   startUniversalChat,
   analyzeUniversalCase,
-  getUniversalCallingAIResponse,
-  getUniversalOTPResponse,
   generateUniversalHealthRisks,
   trainUniversalAiModel,
   TriageResult,
@@ -21,18 +19,6 @@ export { searchIndianLocation, reverseGeocodeLocality };
 
 export const startNewChat = (): UniversalChatSession => {
   return startUniversalChat();
-};
-
-export const getCallingAIResponse = async (
-  history: { role: string; text: string }[],
-  input: string,
-  currentState: string
-) => {
-  return getUniversalCallingAIResponse(history, input, currentState);
-};
-
-export const getOTPAIResponse = async () => {
-  return getUniversalOTPResponse();
 };
 
 export const analyzeCase = async (transcript: string): Promise<TriageResult> => {

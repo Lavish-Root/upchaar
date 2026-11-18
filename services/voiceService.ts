@@ -1,6 +1,6 @@
 /**
  * Voice Service - Real Human-like Neural Voice AI Engine
- * Delivers natural, compassionate human-like speech for Rural Telemedicine & IVR.
+ * Delivers natural, compassionate human-like speech for Rural Telemedicine.
  * Supports Hindi, Punjabi, Hinglish, English, Gujarati, Marathi, Bengali, Tamil, Telugu, Kannada, Malayalam.
  * Multi-lingual per-sentence adaptation with zero repeat duplication.
  */

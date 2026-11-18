@@ -242,7 +242,7 @@ export const MOCK_CASES: MedicalCase[] = [
     patientId: 'P-101',
     patientName: 'Ramesh Kumar',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    mode: 'IVR',
+    mode: 'ONLINE',
     symptoms: ['High Fever', 'Chills', 'Body Ache'],
     aiDiagnosis: 'Likely Viral Fever or Malaria',
     severity: CaseSeverity.MODERATE,
@@ -294,7 +294,7 @@ export const MOCK_CASES: MedicalCase[] = [
     patientId: 'P-103',
     patientName: 'Gurpreet Singh',
     timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 mins ago
-    mode: 'IVR',
+    mode: 'ONLINE',
     symptoms: ['Chest Pain', 'Shortness of Breath', 'Sweating'],
     aiDiagnosis: 'POSSIBLE CARDIAC EVENT',
     severity: CaseSeverity.CRITICAL,

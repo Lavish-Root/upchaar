@@ -28,7 +28,7 @@ const DATA_FILE = path.join(__dirname, 'data', 'store.json');
 function readStore() {
   try {
     if (!fs.existsSync(DATA_FILE)) {
-      const initial = { cases: [], appointments: [], offlineSessions: [] };
+      const initial = { cases: [], appointments: [] };
       fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
       fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
       return initial;
@@ -37,7 +37,7 @@ function readStore() {
     return JSON.parse(data);
   } catch (err) {
     console.error('Error reading store:', err);
-    return { cases: [], appointments: [], offlineSessions: [] };
+    return { cases: [], appointments: [] };
   }
 }
 
@@ -162,15 +162,6 @@ app.post('/api/appointments', (req, res) => {
   store.appointments = [appt, ...(store.appointments || [])];
   writeStore(store);
   res.status(201).json(appt);
-});
-
-// 5. Offline IVR Sessions API
-app.post('/api/ivr-sessions', (req, res) => {
-  const session = req.body;
-  const store = readStore();
-  store.offlineSessions = [session, ...(store.offlineSessions || [])];
-  writeStore(store);
-  res.status(201).json({ success: true, session });
 });
 
 // 6. Groq AI Proxy Endpoint (keeps API key secure on server)
