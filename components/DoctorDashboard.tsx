@@ -38,7 +38,8 @@ interface DoctorDashboardProps {
 
 const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     user,
-    cases,
+    // Keep original props
+    cases: initialCases, // Rename prop to initialCases
     patients = [],
     stats,
     offlineSessions = [],
@@ -47,8 +48,44 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     onResetCases,
     onLogout
 }) => {
+    const [cases, setCases] = useState<MedicalCase[]>(initialCases);
     const [currentView, setCurrentView] = useState<'ACTIVE_CASES' | 'PREDICTIVE' | 'PROFILE' | 'WELLNESS_MGMT' | 'IVR_MONITORING'>('ACTIVE_CASES');
     const [filter, setFilter] = useState<'ALL' | 'CRITICAL' | 'PENDING' | 'COMPLETED'>('ALL');
+
+    useEffect(() => {
+        // Emergency Call Listener
+        const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY;
+        if (!pusherKey) return;
+        
+        const pusher = new Pusher(pusherKey, { cluster: 'ap2' });
+        const channel = pusher.subscribe(`doctor-${user.id}`);
+        channel.bind('emergency-call', (data: any) => {
+            alert(`🚨 EMERGENCY CALL: ${data.patientName}! \nRoom: ${data.roomId}`);
+        });
+        return () => { pusher.unsubscribe(`doctor-${user.id}`); };
+    }, [user.id]);
+
+    // Fetch cases from API on mount
+    useEffect(() => {
+        fetch('/api/cases')
+            .then(res => res.json())
+            .then(data => setCases(data))
+            .catch(err => console.error("Error fetching cases:", err));
+    }, []);
+
+    const onUpdateStatusLocal = async (caseId: string, status: CaseStatus, prescription?: string, notes?: string) => {
+        const response = await fetch(`/api/cases/${caseId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, prescription, doctorNotes: notes }),
+        });
+        if (response.ok) {
+            const updatedCase = await response.json();
+            setCases(cases.map(c => c.id === caseId ? updatedCase : c));
+        }
+    };
+    
+    // ... rest of the component uses 'cases' state and 'onUpdateStatusLocal' instead of props ...
 
     // Fix: Derive filteredCases from cases and filter state to resolve 'Cannot find name' errors
     const filteredCases = cases.filter(c => {

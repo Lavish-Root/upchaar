@@ -279,7 +279,7 @@ export class UniversalChatSession {
     // 2. Try Gemini
     if (config.geminiApiKey) {
       try {
-        const prompt = \`CONVERSATION HISTORY:\n\${this.history.map(h => \`\${h.role}: \${h.text}\`).join('\n')}\n\nPATIENT: \${userText}\n\nDOCTOR RESPONSE:\`;
+        const prompt = `CONVERSATION HISTORY:\n${this.history.map(h => `${h.role}: ${h.text}`).join('\n')}\n\nPATIENT: ${userText}\n\nDOCTOR RESPONSE:`;
         const reply = await callGeminiAPI(prompt, DOCTOR_SYSTEM_INSTRUCTION, false);
         this.history.push({ role: 'assistant', text: reply });
         return { text: reply };
@@ -304,9 +304,9 @@ export const startUniversalChat = (): UniversalChatSession => {
  */
 export const analyzeUniversalCase = async (transcript: string): Promise<TriageResult> => {
   const config = getAIConfig();
-  const prompt = \`You are a Senior Chief Medical Officer. Perform medical triage on this consultation transcript.
+  const prompt = `You are a Senior Chief Medical Officer. Perform medical triage on this consultation transcript.
 TRANSCRIPT:
-\${transcript}
+${transcript}
 
 Return a STRICT JSON object matching this schema:
 {
@@ -316,7 +316,7 @@ Return a STRICT JSON object matching this schema:
   "summary": "Brief clinical summary of patient condition",
   "homeRemedies": ["Remedy 1 with simple ingredients", "Remedy 2 with instructions"],
   "careSuggestions": "Practical care and hygiene instructions"
-}\`;
+}`;
 
   // Try Groq
   if (config.groqApiKey || DEFAULT_GROQ_KEY) {
@@ -365,11 +365,11 @@ export const getUniversalCallingAIResponse = async (
   otpTrigger?: boolean;
 }> => {
   const config = getAIConfig();
-  const prompt = \`
+  const prompt = `
 Act as PraanSewa Medical Call Controller for Rural Helpline (IVR).
-CURRENT STATE: \${currentState}
-PATIENT INPUT: "\${input}"
-CONVERSATION HISTORY: \${JSON.stringify(history)}
+CURRENT STATE: ${currentState}
+PATIENT INPUT: "${input}"
+CONVERSATION HISTORY: ${JSON.stringify(history)}
 
 TASK:
 1. Detect patient language (Hindi / Punjabi / English).
@@ -387,7 +387,7 @@ Return JSON ONLY:
   "mobileNumber": null | "10 digit number",
   "otpTrigger": true | false
 }
-\`;
+`;
 
   if (config.groqApiKey || DEFAULT_GROQ_KEY) {
     try {
@@ -423,7 +423,7 @@ export const getUniversalOTPResponse = async (): Promise<{ otp: string; spokenTe
   const digitsSpoken = otp.split('').join(' . ');
   return {
     otp,
-    spokenText: \`Aapka 4-digit verification code hai: \${digitsSpoken}. Kripya is code ko dohraiye.\`
+    spokenText: `Aapka 4-digit verification code hai: ${digitsSpoken}. Kripya is code ko dohraiye.`
   };
 };
 
@@ -432,8 +432,8 @@ export const getUniversalOTPResponse = async (): Promise<{ otp: string; spokenTe
  */
 export const generateUniversalHealthRisks = async (patients: PatientProfile[]): Promise<RiskPrediction[]> => {
   const config = getAIConfig();
-  const prompt = \`Analyze these rural patient health profiles and predict risk levels (HIGH, MEDIUM, LOW) for seasonal diseases (Monsoon/Winter flu, dengue, heatstroke, diabetes exacerbation):
-PATIENTS: \${JSON.stringify(patients)}
+  const prompt = `Analyze these rural patient health profiles and predict risk levels (HIGH, MEDIUM, LOW) for seasonal diseases (Monsoon/Winter flu, dengue, heatstroke, diabetes exacerbation):
+PATIENTS: ${JSON.stringify(patients)}
 
 Return a JSON array of objects:
 [
@@ -446,7 +446,7 @@ Return a JSON array of objects:
     "suggestedAction": "Action for ASHA worker or doctor",
     "draftMessage": "Friendly SMS/WhatsApp alert in Hindi/English to send to patient"
   }
-]\`;
+]`;
 
   if (config.groqApiKey || DEFAULT_GROQ_KEY) {
     try {
@@ -481,9 +481,9 @@ Return a JSON array of objects:
       patientName: p.name,
       riskLevel,
       predictedCondition: riskLevel === 'HIGH' ? 'Cardiovascular & Seasonal Flu Complication' : 'Seasonal Upper Respiratory Infection',
-      reasoning: \`Patient is \${p.age} years old with history of \${p.medicalHistory.join(', ') || 'seasonal vulnerability'}. Approaching weather changes pose heightened risk.\`,
+      reasoning: `Patient is ${p.age} years old with history of ${p.medicalHistory.join(', ') || 'seasonal vulnerability'}. Approaching weather changes pose heightened risk.`,
       suggestedAction: riskLevel === 'HIGH' ? 'Immediate home visit by ASHA worker and BP/Glucose check' : 'Preventive dietary advisory & telemedicine follow-up',
-      draftMessage: \`Namaste \${p.name} ji, mausam badal raha hai. Kripya apni niyamit dawa samay par lein aur thand se bachein. Kisi takleef par 1800-AI-CARE par call karein.\`
+      draftMessage: `Namaste ${p.name} ji, mausam badal raha hai. Kripya apni niyamit dawa samay par lein aur thand se bachein. Kisi takleef par 1800-AI-CARE par call karein.`
     };
   });
 };
@@ -493,22 +493,22 @@ Return a JSON array of objects:
  */
 export const trainUniversalAiModel = async (cumulativeDataset: any[], modelConfig: any): Promise<ModelHistoryEntry> => {
   const config = getAIConfig();
-  const prompt = \`Simulate statistical machine learning training metrics for a rural clinical dataset (Version: \${modelConfig.version}, Algorithm: \${modelConfig.algorithm}).
-Dataset size: \${cumulativeDataset.length} records.
+  const prompt = `Simulate statistical machine learning training metrics for a rural clinical dataset (Version: ${modelConfig.version}, Algorithm: ${modelConfig.algorithm}).
+Dataset size: ${cumulativeDataset.length} records.
 
 Return JSON ONLY:
 {
-  "version": "\${modelConfig.version}",
-  "timestamp": "\${new Date().toISOString()}",
+  "version": "${modelConfig.version}",
+  "timestamp": "${new Date().toISOString()}",
   "metrics": {
     "accuracy": 0.94,
     "precision": 0.92,
     "recall": 0.95,
     "f1Score": 0.93,
-    "recordsAnalyzed": \${Math.max(cumulativeDataset.length * 10, 150)},
-    "lastTrained": "\${new Date().toLocaleDateString()}",
-    "version": "\${modelConfig.version}",
-    "algorithmUsed": "\${modelConfig.algorithm || 'Random Forest Classifier'}"
+    "recordsAnalyzed": ${Math.max(cumulativeDataset.length * 10, 150)},
+    "lastTrained": "${new Date().toLocaleDateString()}",
+    "version": "${modelConfig.version}",
+    "algorithmUsed": "${modelConfig.algorithm || 'Random Forest Classifier'}"
   },
   "trends": [
     { "category": "Viral Fever", "count": 64, "growth": 18, "description": "Increasing with post-monsoon water logging" },
@@ -519,7 +519,7 @@ Return JSON ONLY:
     [45, 3],
     [4, 48]
   ]
-}\`;
+}`;
 
   if (config.groqApiKey || DEFAULT_GROQ_KEY) {
     try {
@@ -691,7 +691,7 @@ function handleLocalIVRFlow(input: string, currentState: string) {
 
   if (currentState === 'MOBILE_NUMBER_COLLECTION') {
     return {
-      responseText: "OTP generate kiya ja raha रहा है...",
+      responseText: "OTP generate kiya ja raha hai...",
       nextState: 'OTP_VERIFICATION',
       mobileNumber: input,
       otpTrigger: true

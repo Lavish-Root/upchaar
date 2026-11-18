@@ -140,6 +140,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [apptDoctor, setApptDoctor] = useState('Dr. A. Sharma (General Physician)');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'CARD' | 'CASH'>('UPI');
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+  const [hoverRating, setHoverRating] = useState<number | null>(null); // Added this missing state
 
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
@@ -688,6 +689,20 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             </p>
           </div>
         </div>
+
+        <button 
+          onClick={async () => {
+            await fetch('/api/video/emergency-request', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ doctorId: 'DR101', patientName: user.name, roomId: `emg-${Date.now()}` })
+            });
+            alert("Emergency signal sent to Doctor!");
+          }}
+          className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg animate-pulse flex items-center gap-2"
+        >
+          <Ambulance size={20} /> SOS Emergency Call
+        </button>
 
         <div className="relative z-10 flex items-center gap-2 self-start md:self-auto">
           <div className="px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold flex items-center gap-2 text-white">
