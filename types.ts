@@ -83,10 +83,26 @@ export interface Appointment {
   hospitalName?: string;
   hospitalAddress?: string;
   date: string;
+  timeSlot?: string;
+  consultationType?: 'ONLINE_VIDEO' | 'IN_PERSON';
+  meetingRoomId?: string;
   reason: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   paymentStatus: 'PAID' | 'PENDING' | 'PAY_AT_CLINIC';
   amount: number;
+}
+
+export interface ActiveVideoSession {
+  roomId: string;
+  appointmentId?: string;
+  patientId: string;
+  patientName: string;
+  doctorId: string;
+  doctorName: string;
+  isEmergency?: boolean;
+  symptoms?: string[];
+  diagnosis?: string;
+  prescription?: string;
 }
 
 export interface PatientProfile {

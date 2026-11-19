@@ -7,7 +7,7 @@ import {
     Video, Navigation, Server, Database, Globe, ZapOff, Wifi, WifiOff, Key,
     MessageSquare, Stethoscope, Trash2, RotateCcw
 } from 'lucide-react';
-import { MedicalCase, CaseSeverity, CaseStatus, PatientProfile, User as UserType, HomeRemedy, HealthTip, WellnessActivity, Season, OfflineSession } from '../types';
+import { MedicalCase, CaseSeverity, CaseStatus, PatientProfile, User as UserType, HomeRemedy, HealthTip, WellnessActivity, Season, OfflineSession, Appointment, ActiveVideoSession } from '../types';
 import PredictiveAlerts from './PredictiveAlerts';
 import TipCommentsModal from './TipCommentsModal';
 import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
@@ -27,10 +27,13 @@ declare const L: any;
 interface DoctorDashboardProps {
     user: UserType; // Current logged in doctor
     cases: MedicalCase[];
+    appointments?: Appointment[];
     patients?: PatientProfile[];
     stats: any;
     offlineSessions?: OfflineSession[];
     onUpdateStatus: (caseId: string, status: CaseStatus, prescription?: string, notes?: string) => void;
+    onUpdateAppointment?: (updatedAppt: Appointment) => void;
+    onStartVideoCall?: (session: ActiveVideoSession) => void;
     onDeleteCase?: (caseId: string) => void;
     onResetCases?: () => void;
     onLogout: () => void;
@@ -40,30 +43,54 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     user,
     // Keep original props
     cases: initialCases, // Rename prop to initialCases
+    appointments = [],
     patients = [],
     stats,
     offlineSessions = [],
     onUpdateStatus,
+    onUpdateAppointment,
+    onStartVideoCall,
     onDeleteCase,
     onResetCases,
     onLogout
 }) => {
     const [cases, setCases] = useState<MedicalCase[]>(initialCases);
-    const [currentView, setCurrentView] = useState<'ACTIVE_CASES' | 'PREDICTIVE' | 'PROFILE' | 'WELLNESS_MGMT' | 'IVR_MONITORING'>('ACTIVE_CASES');
+    const [currentView, setCurrentView] = useState<'ACTIVE_CASES' | 'PREDICTIVE' | 'PROFILE' | 'WELLNESS_MGMT' | 'IVR_MONITORING' | 'APPOINTMENTS'>('ACTIVE_CASES');
     const [filter, setFilter] = useState<'ALL' | 'CRITICAL' | 'PENDING' | 'COMPLETED'>('ALL');
+    const [appointmentFilter, setAppointmentFilter] = useState<'ALL' | 'VIDEO' | 'IN_PERSON'>('ALL');
+    const [incomingEmergency, setIncomingEmergency] = useState<{
+        patientName: string;
+        patientId: string;
+        roomId: string;
+        timestamp: string;
+    } | null>(null);
 
+    // Cross-tab Emergency Call Listener (via BroadcastChannel & Storage Event)
     useEffect(() => {
-        // Emergency Call Listener
-        const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY;
-        if (!pusherKey) return;
-        
-        const pusher = new Pusher(pusherKey, { cluster: 'ap2' });
-        const channel = pusher.subscribe(`doctor-${user.id}`);
-        channel.bind('emergency-call', (data: any) => {
-            alert(`🚨 EMERGENCY CALL: ${data.patientName}! \nRoom: ${data.roomId}`);
-        });
-        return () => { pusher.unsubscribe(`doctor-${user.id}`); };
-    }, [user.id]);
+        let bc: BroadcastChannel | null = null;
+        try {
+            bc = new BroadcastChannel('upchaar_emergency_channel');
+            bc.onmessage = (e) => {
+                if (e.data && e.data.type === 'EMERGENCY_CALL') {
+                    setIncomingEmergency(e.data);
+                }
+            };
+        } catch (err) {}
+
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'upchaar_last_emergency' && e.newValue) {
+                try {
+                    const data = JSON.parse(e.newValue);
+                    setIncomingEmergency(data);
+                } catch (err) {}
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => {
+            if (bc) bc.close();
+            window.removeEventListener('storage', handleStorage);
+        };
+    }, []);
 
     // Fetch cases from API on mount
     useEffect(() => {
@@ -428,6 +455,16 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                 <Activity size={24} />
             </button>
             <button
+                onClick={() => setCurrentView('APPOINTMENTS')}
+                className={`p-3 rounded-xl transition relative ${currentView === 'APPOINTMENTS' ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/50' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                title="Scheduled Consultations & Video Calls"
+            >
+                <Video size={24} />
+                {appointments.filter(a => a.consultationType === 'ONLINE_VIDEO' && a.status === 'SCHEDULED').length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+                )}
+            </button>
+            <button
                 onClick={() => setCurrentView('PREDICTIVE')}
                 className={`p-3 rounded-xl transition ${currentView === 'PREDICTIVE' ? 'bg-purple-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
                 title="Predictive Health"
@@ -470,6 +507,16 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
             >
                 <div className={`p-2 rounded-xl ${currentView === 'ACTIVE_CASES' ? 'bg-emerald-100 shadow-sm' : ''}`}><Activity size={20} /></div>
                 <span className="text-[10px] font-bold">Queue</span>
+            </button>
+            <button
+                onClick={() => setCurrentView('APPOINTMENTS')}
+                className={`flex flex-col items-center gap-1 transition-all duration-300 relative ${currentView === 'APPOINTMENTS' ? 'text-teal-600 -translate-y-1' : 'text-slate-400 hover:text-teal-500'}`}
+            >
+                <div className={`p-2 rounded-xl ${currentView === 'APPOINTMENTS' ? 'bg-teal-100 shadow-sm' : ''}`}><Video size={20} /></div>
+                <span className="text-[10px] font-bold">Calls</span>
+                {appointments.filter(a => a.consultationType === 'ONLINE_VIDEO' && a.status === 'SCHEDULED').length > 0 && (
+                    <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                )}
             </button>
             <button
                 onClick={() => setCurrentView('PREDICTIVE')}
@@ -948,7 +995,217 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
         );
     };
 
+    const EmergencyBanner = () => {
+        if (!incomingEmergency) return null;
+        return (
+            <div className="bg-red-600 text-white px-4 py-3 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 z-30 animate-pulse">
+                <div className="flex items-center gap-2 text-sm font-bold">
+                    <AlertTriangle size={20} className="animate-bounce shrink-0" />
+                    <span>🚨 INCOMING EMERGENCY CALL from <strong>{incomingEmergency.patientName}</strong>!</span>
+                    <span className="text-xs bg-red-800 px-2 py-0.5 rounded font-mono">Room: {incomingEmergency.roomId}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => {
+                            if (onStartVideoCall) {
+                                onStartVideoCall({
+                                    roomId: incomingEmergency.roomId,
+                                    patientId: incomingEmergency.patientId,
+                                    patientName: incomingEmergency.patientName,
+                                    doctorId: user.id,
+                                    doctorName: user.name,
+                                    isEmergency: true
+                                });
+                            }
+                            setIncomingEmergency(null);
+                        }}
+                        className="px-4 py-1.5 bg-white text-red-700 rounded-lg text-xs font-black shadow hover:bg-red-50 transition cursor-pointer flex items-center gap-1.5"
+                    >
+                        <Video size={14} /> Answer Video Call
+                    </button>
+                    <button
+                        onClick={() => setIncomingEmergency(null)}
+                        className="px-3 py-1.5 bg-red-800 hover:bg-red-900 text-white rounded-lg text-xs font-semibold"
+                    >
+                        Dismiss
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderAppointments = () => {
+        const filteredAppts = appointments.filter(a => {
+            if (appointmentFilter === 'VIDEO') return a.consultationType === 'ONLINE_VIDEO';
+            if (appointmentFilter === 'IN_PERSON') return a.consultationType === 'IN_PERSON';
+            return true;
+        });
+
+        const videoCount = appointments.filter(a => a.consultationType === 'ONLINE_VIDEO').length;
+        const pendingCount = appointments.filter(a => a.status === 'SCHEDULED').length;
+
+        return (
+            <div className="h-full flex flex-col md:flex-row bg-slate-50 overflow-hidden">
+                <div className="hidden md:flex h-full"><Sidebar /></div>
+                <div className="flex-1 overflow-hidden flex flex-col">
+                    <EmergencyBanner />
+                    {/* Header */}
+                    <div className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm">
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <Video className="text-teal-600" size={24} />
+                                Teleconsultations & Appointments
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                Manage scheduled patient video appointments and clinic visits
+                            </p>
+                        </div>
+                        <HeaderAvatar />
+                    </div>
+
+                    {/* Stats & Filter Bar */}
+                    <div className="p-4 md:p-6 pb-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+                            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-bold text-slate-400 uppercase">Total Scheduled</p>
+                                    <p className="text-2xl font-black text-slate-800">{appointments.length}</p>
+                                </div>
+                                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl"><FileText size={20} /></div>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-bold text-teal-600 uppercase">Video Teleconsultations</p>
+                                    <p className="text-2xl font-black text-teal-700">{videoCount}</p>
+                                </div>
+                                <div className="p-2.5 bg-teal-50 text-teal-600 rounded-xl"><Video size={20} /></div>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <p className="text-xs font-bold text-amber-600 uppercase">Pending Calls</p>
+                                    <p className="text-2xl font-black text-amber-700">{pendingCount}</p>
+                                </div>
+                                <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl"><Clock size={20} /></div>
+                            </div>
+                        </div>
+
+                        {/* Filter tabs */}
+                        <div className="flex gap-2 border-b border-slate-200 pb-2">
+                            {(['ALL', 'VIDEO', 'IN_PERSON'] as const).map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setAppointmentFilter(tab)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                        appointmentFilter === tab
+                                            ? 'bg-teal-600 text-white shadow-sm'
+                                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {tab === 'ALL' ? 'All Bookings' : tab === 'VIDEO' ? '📹 Video Calls' : '🏥 In-Person Visits'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Appointments List */}
+                    <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-24 md:pb-6 space-y-3">
+                        {filteredAppts.length === 0 ? (
+                            <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+                                <Video className="mx-auto text-slate-300 mb-2" size={40} />
+                                <h4 className="font-bold text-slate-700">No scheduled appointments found</h4>
+                                <p className="text-xs text-slate-400 mt-1">When patients book a video call or clinic visit, it appears here instantly.</p>
+                            </div>
+                        ) : (
+                            filteredAppts.map(apt => (
+                                <div
+                                    key={apt.id}
+                                    className="bg-white p-4 md:p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-teal-300 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
+                                >
+                                    <div className="flex items-start gap-4">
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 ${
+                                            apt.consultationType === 'ONLINE_VIDEO' ? 'bg-teal-100 text-teal-700' : 'bg-slate-100 text-slate-700'
+                                        }`}>
+                                            {apt.consultationType === 'ONLINE_VIDEO' ? <Video size={22} /> : <Stethoscope size={22} />}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-bold text-base text-slate-800">{apt.patientName}</h4>
+                                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                                                    apt.consultationType === 'ONLINE_VIDEO'
+                                                        ? 'bg-teal-100 text-teal-800 border border-teal-200'
+                                                        : 'bg-slate-100 text-slate-700'
+                                                }`}>
+                                                    {apt.consultationType === 'ONLINE_VIDEO' ? 'Video Teleconsultation' : 'In-Person'}
+                                                </span>
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                    apt.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                    {apt.status}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Date: <strong className="text-slate-700">{new Date(apt.date).toLocaleDateString()}</strong> • Time: <strong className="text-teal-700">{apt.timeSlot || '10:00 AM - 10:30 AM'}</strong> • Facility: <strong>{apt.hospitalName || 'Online'}</strong>
+                                            </p>
+                                            {apt.meetingRoomId && (
+                                                <p className="text-[11px] font-mono text-slate-400 mt-0.5">
+                                                    Meeting Room: <span className="text-teal-600 font-bold">{apt.meetingRoomId}</span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                        {apt.consultationType === 'ONLINE_VIDEO' && apt.status !== 'COMPLETED' && (
+                                            <button
+                                                onClick={() => {
+                                                    if (onStartVideoCall) {
+                                                        onStartVideoCall({
+                                                            roomId: apt.meetingRoomId || `room-${apt.id}`,
+                                                            appointmentId: apt.id,
+                                                            patientId: apt.patientId,
+                                                            patientName: apt.patientName,
+                                                            doctorId: user.id,
+                                                            doctorName: user.name,
+                                                            isEmergency: false
+                                                        });
+                                                    }
+                                                }}
+                                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                                            >
+                                                <Video size={16} /> Start Video Call
+                                            </button>
+                                        )}
+
+                                        {apt.status !== 'COMPLETED' ? (
+                                            <button
+                                                onClick={() => {
+                                                    if (onUpdateAppointment) {
+                                                        onUpdateAppointment({ ...apt, status: 'COMPLETED' });
+                                                    }
+                                                }}
+                                                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+                                                title="Mark as Completed"
+                                            >
+                                                <CheckCircle size={14} className="inline mr-1 text-emerald-600" /> Done
+                                            </button>
+                                        ) : (
+                                            <span className="text-xs text-emerald-600 font-bold flex items-center gap-1 bg-emerald-50 px-3 py-1.5 rounded-xl">
+                                                <CheckCircle size={14} /> Completed
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+                <MobileBottomNav />
+            </div>
+        );
+    };
+
     // --- EXISTING DASHBOARDS (FROZEN CLINICAL FUNCTIONALITY) ---
+    if (currentView === 'APPOINTMENTS') return renderAppointments();
     if (currentView === 'WELLNESS_MGMT') return renderWellnessMgmt();
     if (currentView === 'IVR_MONITORING') return renderIVRMonitoring();
 
@@ -1025,7 +1282,10 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
     return (
         <div className="h-full flex flex-col bg-slate-50 md:flex-row overflow-hidden relative animate-in fade-in duration-500">
             <Sidebar />
-            <div className="w-full md:w-1/3 lg:w-1/4 bg-white border-r border-slate-200 flex flex-col h-full z-10 pb-20 md:pb-0">
+            <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <EmergencyBanner />
+                <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden relative">
+                    <div className="w-full md:w-1/3 lg:w-1/4 bg-white border-r border-slate-200 flex flex-col h-full z-10 pb-20 md:pb-0">
                 <div className="p-4 border-b border-slate-200 shrink-0 animate-in fade-in slide-in-from-top-4 duration-500">
                     <div className="flex justify-between items-center mb-4 md:hidden">
                         <span className="font-bold text-slate-900 text-lg tracking-tight">{user.name}</span>
@@ -1141,8 +1401,27 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                                                     <ShieldAlert size={16} /> Critical Priority Interaction Needed
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button className="p-2 bg-white border border-red-200 rounded-lg text-red-600 hover:bg-red-50 transition"><Video size={16} /></button>
-                                                    <button className="p-2 bg-white border border-red-200 rounded-lg text-red-600 hover:bg-red-50 transition"><Phone size={16} /></button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (onStartVideoCall && selectedCase) {
+                                                                onStartVideoCall({
+                                                                    roomId: `case-${selectedCase.id}`,
+                                                                    patientId: selectedCase.patientId,
+                                                                    patientName: selectedCase.patientName,
+                                                                    doctorId: user.id,
+                                                                    doctorName: user.name,
+                                                                    isEmergency: selectedCase.severity === CaseSeverity.CRITICAL,
+                                                                    symptoms: selectedCase.symptoms,
+                                                                    diagnosis: selectedCase.aiDiagnosis,
+                                                                    prescription: selectedCase.prescription
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition flex items-center gap-1.5 text-xs font-bold shadow-sm cursor-pointer"
+                                                        title="Launch Video Teleconsultation"
+                                                    >
+                                                        <Video size={14} /> Start Video Call
+                                                    </button>
                                                 </div>
                                             </div>
                                         )}
@@ -1231,6 +1510,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({
                         <div className="flex flex-col items-center justify-center h-full text-slate-400"><Search className="w-16 h-16 mb-4 opacity-10" /><p className="text-lg font-medium text-slate-500">No Case Selected</p><p className="text-sm">Select a patient from the queue to review details.</p></div>
                     )}
                 </div>
+            </div>
+            </div>
             </div>
             {showConfirmModal && selectedCase && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
