@@ -1,0 +1,20 @@
+{
+  "name": "praansewa-monorepo",
+  "version": "1.0.0",
+  "description": "PraanSewa - Complete Healthcare Management Platform",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "prisma:generate": "npm --prefix backend run prisma:generate",
+    "prisma:migrate": "npm --prefix backend run prisma:migrate",
+    "prisma:seed": "npm --prefix backend run prisma:seed",
+    "test": "npm --prefix backend test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
