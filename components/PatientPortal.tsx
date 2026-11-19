@@ -8,7 +8,7 @@ import {
   Leaf, Sun, Snowflake, CloudRain, Zap, Heart, Info, ThumbsUp,
   ExternalLink, Smile, Search, Pill, FlaskConical, Ambulance, Building, Clock, VolumeX
 } from 'lucide-react';
-import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity } from '../types';
+import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity, ActiveVideoSession } from '../types';
 import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals, searchIndianLocation, reverseGeocodeLocality } from '../services/geminiService';
 import { UniversalChatSession } from '../services/aiService';
 import { playRealisticVoice, stopRealisticVoice, setVoiceStateListener } from '../services/voiceService';
@@ -35,6 +35,7 @@ interface PatientPortalProps {
   appointments?: Appointment[];
   onSubmitCase: (newCase: MedicalCase) => void;
   onBookAppointment: (appt: Appointment) => void;
+  onStartVideoCall?: (session: ActiveVideoSession) => void;
   onLogout: () => void;
 }
 
@@ -47,7 +48,7 @@ const FULL_EMOJI_LIST = [
 
 type ViewState = 'HOME' | 'CONSULT_CHAT' | 'CONSULT_VOICE' | 'TRIAGE_RESULT' | 'FEEDBACK' | 'HISTORY' | 'BOOK_APPOINTMENT' | 'LOCATE_NEARBY' | 'DOCTOR_CONNECT' | 'HOME_REMEDIES' | 'WELLNESS_HUB' | 'DOCTOR_TIPS';
 
-const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = [], appointments = [], onSubmitCase, onBookAppointment, onLogout }) => {
+const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = [], appointments = [], onSubmitCase, onBookAppointment, onStartVideoCall, onLogout }) => {
   const [currentView, setCurrentView] = useState<ViewState>('HOME');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -136,10 +137,13 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [timeLeft, setTimeLeft] = useState(0);
 
   const [apptDate, setApptDate] = useState('');
+  const [apptTimeSlot, setApptTimeSlot] = useState('10:00 AM - 10:30 AM');
+  const [consultationType, setConsultationType] = useState<'ONLINE_VIDEO' | 'IN_PERSON'>('ONLINE_VIDEO');
   const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
   const [apptDoctor, setApptDoctor] = useState('Dr. A. Sharma (General Physician)');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'CARD' | 'CASH'>('UPI');
   const [isPaymentProcessing, setIsPaymentProcessing] = useState(false);
+  const [hoverRating, setHoverRating] = useState<number | null>(null); // Added this missing state
 
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
   const [nearbyHospitals, setNearbyHospitals] = useState<Hospital[]>([]);
@@ -456,10 +460,23 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       setTriageResult(result);
       if (result.severity === CaseSeverity.CRITICAL) {
         saveCase(true, 'VIDEO', transcriptToAnalyze, result);
-        setCurrentView('DOCTOR_CONNECT');
-        setTimeout(() => {
-          setCurrentView('FEEDBACK');
-        }, 4000);
+        if (onStartVideoCall) {
+          onStartVideoCall({
+            roomId: `crit-${Date.now().toString().slice(-6)}`,
+            patientId: user.id,
+            patientName: user.name,
+            doctorId: 'DR101',
+            doctorName: 'Dr. A. Sharma',
+            isEmergency: true,
+            symptoms: transcriptToAnalyze.filter(m => m.role === 'user').map(m => m.text),
+            diagnosis: result.diagnosis
+          });
+        } else {
+          setCurrentView('DOCTOR_CONNECT');
+          setTimeout(() => {
+            setCurrentView('FEEDBACK');
+          }, 4000);
+        }
       } else {
         setCurrentView('TRIAGE_RESULT');
       }
@@ -472,6 +489,22 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   };
 
   const handleFinalSubmit = (needsMedicine: boolean, escalatedMode?: 'VIDEO' | 'VOICE') => {
+    if (escalatedMode === 'VIDEO' && onStartVideoCall) {
+      const caseRoomId = `case-${Date.now().toString().slice(-6)}`;
+      saveCase(needsMedicine, escalatedMode, messages, triageResult || undefined);
+      onStartVideoCall({
+        roomId: caseRoomId,
+        patientId: user.id,
+        patientName: user.name,
+        doctorId: 'DR101',
+        doctorName: 'Dr. A. Sharma (General Physician)',
+        isEmergency: triageResult?.severity === CaseSeverity.CRITICAL,
+        symptoms: messages.filter(m => m.role === 'user').map(m => m.text),
+        diagnosis: triageResult?.diagnosis
+      });
+      return;
+    }
+
     if (escalatedMode) {
       setCurrentView('DOCTOR_CONNECT');
       setTimeout(() => {
@@ -635,26 +668,35 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
     setIsPaymentProcessing(true);
     setTimeout(() => {
       setIsPaymentProcessing(false);
+      const isVideo = consultationType === 'ONLINE_VIDEO';
       const newAppt: Appointment = {
         id: `APT-${Date.now()}`,
         patientId: user.id,
         patientName: user.name,
         doctorId: 'DR101',
         doctorName: apptDoctor,
-        hospitalName: selectedHospital?.name || 'Online Consultation',
-        hospitalAddress: selectedHospital?.address,
+        hospitalName: selectedHospital?.name || (isVideo ? 'PraanSewa Telemedicine' : 'Civil Hospital'),
+        hospitalAddress: selectedHospital?.address || (isVideo ? 'Encrypted Video Room' : 'OPD Counter 3'),
         date: apptDate || new Date(Date.now() + 86400000).toISOString(),
-        reason: 'General Consultation',
+        timeSlot: apptTimeSlot,
+        consultationType: consultationType,
+        meetingRoomId: isVideo ? `upchaar-${Date.now().toString().slice(-6)}` : undefined,
+        reason: isVideo ? 'Scheduled Video Consultation' : 'General Consultation',
         status: 'SCHEDULED',
         paymentStatus: paymentMethod === 'CASH' ? 'PAY_AT_CLINIC' : 'PAID',
-        amount: selectedHospital?.consultationFee || 200
+        amount: selectedHospital?.consultationFee || (isVideo ? 150 : 200)
       };
       onBookAppointment(newAppt);
       setSelectedHospital(null);
       setApptDate('');
       setCurrentView('HOME');
-      alert(paymentMethod === 'CASH' ? "Appointment Confirmed! Pay at clinic." : "Payment Successful! Appointment Confirmed.");
-    }, 2000);
+      alert(paymentMethod === 'CASH'
+        ? "Appointment Confirmed! Pay at clinic."
+        : isVideo
+          ? `Video Consultation Scheduled for ${apptTimeSlot}! Join link created in your Dashboard.`
+          : "Payment Successful! Clinic Appointment Confirmed."
+      );
+    }, 1500);
   };
 
   const submitFeedback = () => {
@@ -688,6 +730,48 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             </p>
           </div>
         </div>
+
+        <button 
+          onClick={async () => {
+            const emgRoomId = `emg-${Date.now().toString().slice(-6)}`;
+            try {
+              const emgPayload = {
+                type: 'EMERGENCY_CALL',
+                patientId: user.id,
+                patientName: user.name,
+                roomId: emgRoomId,
+                timestamp: new Date().toISOString()
+              };
+              const bc = new BroadcastChannel('upchaar_emergency_channel');
+              bc.postMessage(emgPayload);
+              bc.close();
+              localStorage.setItem('upchaar_last_emergency', JSON.stringify(emgPayload));
+              
+              fetch('/api/video/emergency-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ doctorId: 'DR101', patientName: user.name, roomId: emgRoomId })
+              }).catch(() => {});
+            } catch (err) {}
+
+            if (onStartVideoCall) {
+              onStartVideoCall({
+                roomId: emgRoomId,
+                patientId: user.id,
+                patientName: user.name,
+                doctorId: 'DR101',
+                doctorName: 'Emergency Medical Officer',
+                isEmergency: true,
+                symptoms: ['Acute Emergency SOS']
+              });
+            } else {
+              alert("🚨 Emergency signal sent to Doctor!");
+            }
+          }}
+          className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-full shadow-lg animate-pulse flex items-center gap-2 cursor-pointer z-20 shrink-0"
+        >
+          <Ambulance size={20} /> SOS Emergency Call
+        </button>
 
         <div className="relative z-10 flex items-center gap-2 self-start md:self-auto">
           <div className="px-3.5 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold flex items-center gap-2 text-white">
@@ -867,15 +951,40 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
               {appointments.slice(0, 2).map(apt => (
                 <div key={apt.id} className="p-3.5 bg-purple-50/70 rounded-xl border border-purple-100">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider bg-purple-100 px-2 py-0.5 rounded-full">
-                      Upcoming Appointment
+                    <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      {apt.consultationType === 'ONLINE_VIDEO' ? <Video size={10} /> : <Stethoscope size={10} />}
+                      {apt.consultationType === 'ONLINE_VIDEO' ? 'Video Call' : 'Clinic Visit'}
                     </span>
                     <span className="text-xs text-purple-600 font-medium">
                       {new Date(apt.date).toLocaleDateString()}
                     </span>
                   </div>
                   <p className="text-sm font-bold text-slate-800 mt-1">{apt.doctorName}</p>
-                  <p className="text-xs text-slate-500">{apt.reason || 'General Consultation'}</p>
+                  <p className="text-xs text-slate-500">{apt.reason || 'General Consultation'} • <span className="font-semibold text-slate-700">{apt.timeSlot || '10:00 AM'}</span></p>
+
+                  {apt.consultationType === 'ONLINE_VIDEO' && apt.status !== 'COMPLETED' && (
+                    <div className="mt-2.5 pt-2 border-t border-purple-200/60 flex items-center justify-between">
+                      <span className="text-[10px] text-purple-700 font-bold">Room: {apt.meetingRoomId || 'Ready'}</span>
+                      <button
+                        onClick={() => {
+                          if (onStartVideoCall) {
+                            onStartVideoCall({
+                              roomId: apt.meetingRoomId || `room-${apt.id}`,
+                              appointmentId: apt.id,
+                              patientId: user.id,
+                              patientName: user.name,
+                              doctorId: apt.doctorId,
+                              doctorName: apt.doctorName,
+                              isEmergency: false
+                            });
+                          }
+                        }}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+                      >
+                        <Video size={12} /> Join Call
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -1995,6 +2104,39 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           <p className="text-sm text-slate-500">{selectedHospital ? selectedHospital.address : 'Video Call'}</p>
         </div>
 
+        {/* Consultation Mode Selection */}
+        <div className="mb-6 animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Consultation Mode</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setConsultationType('ONLINE_VIDEO')}
+              className={`p-3.5 rounded-xl border flex flex-col items-center text-center gap-1.5 transition cursor-pointer ${
+                consultationType === 'ONLINE_VIDEO'
+                  ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <Video size={24} className={consultationType === 'ONLINE_VIDEO' ? 'text-emerald-600' : 'text-slate-400'} />
+              <span className="text-sm font-bold">Online Video Call</span>
+              <span className="text-[10px] text-slate-500">Live Doctor Teleconsultation (HD)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setConsultationType('IN_PERSON')}
+              className={`p-3.5 rounded-xl border flex flex-col items-center text-center gap-1.5 transition cursor-pointer ${
+                consultationType === 'IN_PERSON'
+                  ? 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-2 ring-emerald-500/20'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              <Stethoscope size={24} className={consultationType === 'IN_PERSON' ? 'text-emerald-600' : 'text-slate-400'} />
+              <span className="text-sm font-bold">In-Person Visit</span>
+              <span className="text-[10px] text-slate-500">Clinic / Hospital Desk Appointment</span>
+            </button>
+          </div>
+        </div>
+
         <div className="mb-6 animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
           <label className="block text-sm font-semibold text-slate-700 mb-2">Select Doctor</label>
           <select
@@ -2015,6 +2157,35 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
             onChange={(e) => setApptDate(e.target.value)}
             className="w-full p-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
           />
+        </div>
+
+        {/* Time Slot Selection */}
+        <div className="mb-6 animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '260ms', animationFillMode: 'both' }}>
+          <label className="block text-sm font-semibold text-slate-700 mb-2">Select Time Slot</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {[
+              '09:30 AM - 10:00 AM',
+              '10:30 AM - 11:00 AM',
+              '11:30 AM - 12:00 PM',
+              '02:00 PM - 02:30 PM',
+              '03:30 PM - 04:00 PM',
+              '05:00 PM - 05:30 PM',
+              '06:30 PM - 07:00 PM'
+            ].map(slot => (
+              <button
+                key={slot}
+                type="button"
+                onClick={() => setApptTimeSlot(slot)}
+                className={`py-2 px-3 rounded-xl text-xs font-semibold border transition cursor-pointer ${
+                  apptTimeSlot === slot
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                {slot}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="mb-8 animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
@@ -2070,14 +2241,14 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
         <div className="flex flex-col animate-in zoom-in-95 fade-in duration-300" style={{ animationDelay: '375ms', animationFillMode: 'both' }}>
           <div className="flex items-center justify-between mb-4 px-2">
-            <span className="text-sm font-medium text-slate-600">Total Fee</span>
-            <span className="text-xl font-bold text-slate-900">₹{selectedHospital?.consultationFee || 200}</span>
+            <span className="text-sm font-medium text-slate-600">Total Consultation Fee</span>
+            <span className="text-xl font-bold text-slate-900">₹{selectedHospital?.consultationFee || (consultationType === 'ONLINE_VIDEO' ? 150 : 200)}</span>
           </div>
 
           <button
             onClick={handleBookingSubmit}
             disabled={!apptDate || isPaymentProcessing}
-            className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20"
           >
             {isPaymentProcessing ? (
               <>
@@ -2085,7 +2256,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
               </>
             ) : (
               <>
-                {paymentMethod === 'CASH' ? 'Confirm Booking' : `Pay ₹${selectedHospital?.consultationFee || 200} & Book`}
+                {paymentMethod === 'CASH' ? 'Confirm Booking' : `Pay ₹${selectedHospital?.consultationFee || (consultationType === 'ONLINE_VIDEO' ? 150 : 200)} & Confirm`}
               </>
             )}
           </button>
@@ -2112,8 +2283,16 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                 <div key={apt.id} className="bg-white p-4 rounded-xl shadow-sm border border-l-4 border-purple-500">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-bold text-slate-800">{apt.doctorName}</h4>
-                      <p className="text-sm text-slate-500">{new Date(apt.date).toLocaleDateString()} • {apt.hospitalName || 'Online'}</p>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-slate-800">{apt.doctorName}</h4>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 flex items-center gap-1">
+                          {apt.consultationType === 'ONLINE_VIDEO' ? <Video size={10} /> : <Stethoscope size={10} />}
+                          {apt.consultationType === 'ONLINE_VIDEO' ? 'Online Video' : 'In-Person'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500 mt-0.5">
+                        {new Date(apt.date).toLocaleDateString()} • {apt.timeSlot || 'Scheduled Time'} • {apt.hospitalName || 'Online'}
+                      </p>
                     </div>
                     <div className="text-right">
                       <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded-full block mb-1">{apt.status}</span>
@@ -2121,6 +2300,30 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
                       {apt.paymentStatus === 'PAY_AT_CLINIC' && <span className="text-[10px] text-amber-600 font-bold">Pay at Clinic</span>}
                     </div>
                   </div>
+
+                  {apt.consultationType === 'ONLINE_VIDEO' && apt.status !== 'COMPLETED' && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-xs text-slate-500 font-mono">Room ID: <strong className="text-emerald-700">{apt.meetingRoomId || 'Ready'}</strong></span>
+                      <button
+                        onClick={() => {
+                          if (onStartVideoCall) {
+                            onStartVideoCall({
+                              roomId: apt.meetingRoomId || `room-${apt.id}`,
+                              appointmentId: apt.id,
+                              patientId: user.id,
+                              patientName: user.name,
+                              doctorId: apt.doctorId,
+                              doctorName: apt.doctorName,
+                              isEmergency: false
+                            });
+                          }
+                        }}
+                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition"
+                      >
+                        <Video size={14} /> Join Video Consultation
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

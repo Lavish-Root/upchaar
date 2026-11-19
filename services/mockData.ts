@@ -397,3 +397,39 @@ export const MOCK_PATIENTS: PatientProfile[] = [
     riskFactors: ['High Glucose', 'Irregular Follow-up']
   }
 ];
+
+export const MOCK_APPOINTMENTS = [
+  {
+    id: 'APT-101',
+    patientId: 'P-101',
+    patientName: 'Gurpreet Singh',
+    doctorId: 'DR101',
+    doctorName: 'Dr. A. Sharma (General Physician)',
+    hospitalName: 'PraanSewa Telemedicine Network',
+    hospitalAddress: 'Encrypted Video Room',
+    date: new Date().toISOString(),
+    timeSlot: '10:30 AM - 11:00 AM',
+    consultationType: 'ONLINE_VIDEO' as const,
+    meetingRoomId: 'upchaar-demo-101',
+    reason: 'Follow-up on Chest Congestion & Chronic Cough',
+    status: 'SCHEDULED' as const,
+    paymentStatus: 'PAID' as const,
+    amount: 150
+  },
+  {
+    id: 'APT-102',
+    patientId: 'P-102',
+    patientName: 'Manpreet Kaur',
+    doctorId: 'DR101',
+    doctorName: 'Dr. A. Sharma (General Physician)',
+    hospitalName: 'Civil Hospital Ludhiana',
+    hospitalAddress: 'OPD Counter 2',
+    date: new Date(Date.now() + 86400000).toISOString(),
+    timeSlot: '02:00 PM - 02:30 PM',
+    consultationType: 'IN_PERSON' as const,
+    reason: 'Blood Pressure & Diabetes Checkup',
+    status: 'SCHEDULED' as const,
+    paymentStatus: 'PAY_AT_CLINIC' as const,
+    amount: 200
+  }
+];

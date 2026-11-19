@@ -32,3 +32,5 @@ testsprite_tests
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*

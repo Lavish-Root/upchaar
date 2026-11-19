@@ -4,6 +4,13 @@
     {
       "source": "/(.*)",
       "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "type": "service",
+        "service": "ai-upchaar-api"
+      }
     }
   ],
   "headers": [
@@ -24,5 +31,12 @@
         }
       ]
     }
-  ]
+  ],
+  "services": {
+    "ai-upchaar-api": {
+      "root": "server",
+      "entrypoint": "index.js",
+      "buildCommand": "npm install"
+    }
+  }
 }

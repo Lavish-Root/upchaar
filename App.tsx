@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Stethoscope, User as UserIcon, LayoutGrid, LogOut, Loader2, Key, Zap, Sparkles, Shield } from 'lucide-react';
+import { Phone, Stethoscope, User as UserIcon, LayoutGrid, LogOut, Loader2, Key, Zap, Sparkles, Shield, Video } from 'lucide-react';
 import PatientPortal from './components/PatientPortal';
 import DoctorDashboard from './components/DoctorDashboard';
 import LoginScreen from './components/LoginScreen';
 import ApiKeyModal from './components/ApiKeyModal';
+import VideoCall from './components/VideoCall';
 import Logo from './components/Logo';
-import { MOCK_CASES, MOCK_STATS, MOCK_PATIENTS } from './services/mockData';
-import { MedicalCase, CaseStatus, User, UserRole, Appointment } from './types';
+import { MOCK_CASES, MOCK_STATS, MOCK_PATIENTS, MOCK_APPOINTMENTS } from './services/mockData';
+import { MedicalCase, CaseStatus, CaseSeverity, User, UserRole, Appointment, OfflineSession, ActiveVideoSession } from './types';
 import { logout, getSession } from './services/authService';
 import { getAIConfig } from './services/aiService';
 
@@ -16,6 +17,7 @@ function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [aiConfig, setAiConfig] = useState(getAIConfig());
+  const [activeVideoSession, setActiveVideoSession] = useState<ActiveVideoSession | null>(null);
 
   // Helper to ensure default / emergency cases and user-submitted cases are merged without duplicate IDs
   const mergeCasesWithMocks = (savedCases: MedicalCase[]): MedicalCase[] => {
@@ -59,9 +61,13 @@ function App() {
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
     try {
       const saved = localStorage.getItem('ai_upchaar_appointments');
-      return saved ? JSON.parse(saved) : [];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return MOCK_APPOINTMENTS;
     } catch (e) {
-      return [];
+      return MOCK_APPOINTMENTS;
     }
   });
 
@@ -111,6 +117,50 @@ function App() {
 
   const handleBookAppointment = (newAppt: Appointment) => {
     setAppointments(prev => [newAppt, ...prev]);
+  };
+
+  const handleUpdateAppointment = (updatedAppt: Appointment) => {
+    setAppointments(prev => prev.map(a => a.id === updatedAppt.id ? updatedAppt : a));
+  };
+
+  const handleStartVideoCall = (session: ActiveVideoSession) => {
+    setActiveVideoSession(session);
+  };
+
+  const handleEndVideoCall = (doctorNotes?: string, prescription?: string) => {
+    if (activeVideoSession) {
+      if (activeVideoSession.appointmentId) {
+        setAppointments(prev => prev.map(a => {
+          if (a.id === activeVideoSession.appointmentId) {
+            return { ...a, status: 'COMPLETED' };
+          }
+          return a;
+        }));
+      }
+
+      if (prescription && currentUser?.role === UserRole.DOCTOR) {
+        handleNewCase({
+          id: `CS-CALL-${Date.now()}`,
+          patientId: activeVideoSession.patientId,
+          patientName: activeVideoSession.patientName,
+          timestamp: new Date().toISOString(),
+          mode: 'ONLINE',
+          symptoms: activeVideoSession.symptoms || ['Video Teleconsultation'],
+          aiDiagnosis: activeVideoSession.diagnosis || 'Doctor Teleconsultation Complete',
+          severity: activeVideoSession.isEmergency ? CaseSeverity.CRITICAL : CaseSeverity.MODERATE,
+          status: CaseStatus.APPROVED,
+          prescription: prescription,
+          doctorNotes: doctorNotes,
+          transcript: [{
+            id: `msg-${Date.now()}`,
+            role: 'model',
+            text: `Teleconsultation completed by Dr. ${currentUser.name}. Prescription: ${prescription}`,
+            timestamp: new Date()
+          }]
+        });
+      }
+    }
+    setActiveVideoSession(null);
   };
 
   const handleUpdateStatus = (caseId: string, status: CaseStatus, prescription?: string, notes?: string) => {
@@ -244,6 +294,17 @@ function App() {
         </nav>
       )}
 
+      {/* Active Video Call Fullscreen Overlay */}
+      {activeVideoSession && currentUser && (
+        <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col">
+          <VideoCall
+            session={activeVideoSession}
+            currentUser={currentUser}
+            onEndCall={handleEndVideoCall}
+          />
+        </div>
+      )}
+
       <main className={currentView === 'LOGIN' ? 'min-h-screen' : 'h-[calc(100vh-64px)]'}>
         {currentView === 'LOGIN' && (
           <LoginScreen
@@ -258,6 +319,7 @@ function App() {
             appointments={appointments.filter(a => a.patientId === currentUser.id)}
             onSubmitCase={handleNewCase}
             onBookAppointment={handleBookAppointment}
+            onStartVideoCall={handleStartVideoCall}
             onLogout={handleLogout}
           />
         )}
@@ -265,14 +327,16 @@ function App() {
           <DoctorDashboard
             user={currentUser}
             cases={cases}
+            appointments={appointments}
             patients={MOCK_PATIENTS}
             stats={stats}
             onUpdateStatus={handleUpdateStatus}
+            onUpdateAppointment={handleUpdateAppointment}
+            onStartVideoCall={handleStartVideoCall}
             onDeleteCase={handleDeleteCase}
             onResetCases={handleResetCases}
             onLogout={handleLogout}
           />
-
         )}
       </main>
     </div>

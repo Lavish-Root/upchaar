@@ -4,6 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { Server } from 'socket.io';
+import http from 'http';
+import { ExpressPeerServer } from 'peer';
 
 dotenv.config();
 
@@ -12,8 +15,19 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
 
-// Enable CORS for Vercel and local development
+// PeerJS Server
+const peerServer = ExpressPeerServer(server, {
+  path: '/myapp'
+});
+app.use('/peerjs', peerServer);
+
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
+
+// Enable CORS
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -21,6 +35,34 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10mb' }));
+
+// Pusher instead of Socket.io
+import Pusher from 'pusher';
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID || '',
+  key: process.env.PUSHER_KEY || '',
+  secret: process.env.PUSHER_SECRET || '',
+  cluster: 'ap2',
+  useTLS: true
+});
+
+// Replace socket.io signaling with Pusher events
+app.post('/api/video/signal', async (req, res) => {
+  const { roomId, event, data } = req.body;
+  await pusher.trigger(`presence-${roomId}`, event, data);
+  res.json({ success: true });
+});
+
+// Emergency Call Request
+app.post('/api/video/emergency-request', async (req, res) => {
+  const { doctorId, patientName, roomId } = req.body;
+  await pusher.trigger(`doctor-${doctorId}`, 'emergency-call', {
+    patientName,
+    roomId,
+    timestamp: new Date().toISOString()
+  });
+  res.json({ success: true });
+});
 
 const DATA_FILE = path.join(__dirname, 'data', 'store.json');
 
@@ -208,6 +250,6 @@ app.post('/api/ai/chat', async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`AI Upchaar Backend running on port ${PORT}`);
 });
