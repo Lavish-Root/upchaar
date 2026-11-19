@@ -640,6 +640,8 @@ function generateLocalTriage(transcript: string): TriageResult {
   };
 }
 
+function handleLocalIVRFlow(input: string, currentState: string) {
+  const lower = input.toLowerCase();
 
   if (currentState === 'GREETING' || currentState === 'IDLE') {
     return {
