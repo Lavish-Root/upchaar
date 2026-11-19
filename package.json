@@ -4,6 +4,7 @@
   "description": "PraanSewa - Complete Healthcare Management Platform",
   "private": true,
   "scripts": {
+    "build": "npm --prefix frontend run build",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",

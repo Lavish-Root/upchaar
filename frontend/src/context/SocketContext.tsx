@@ -27,7 +27,8 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
 
-    const socketInstance = io('/consultations', {
+    const socketBase = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || '';
+    const socketInstance = io(`${socketBase}/consultations`, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
     });
