@@ -48,3 +48,5 @@ Thumbs.db
 .stylelintcache
 *.tsbuildinfo
 .vite/
+
+.vercel
