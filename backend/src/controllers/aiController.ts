@@ -118,8 +118,8 @@ export class AIController {
 
   async transcribeVoice(req: Request, res: Response, next: NextFunction) {
     try {
-      const { mimeType } = aiVoiceTranscribeSchema.parse(req.body);
-      const audioBuffer = req.file?.buffer;
+      const { mimeType, audioBase64 } = aiVoiceTranscribeSchema.parse(req.body);
+      const audioBuffer = req.file?.buffer || (audioBase64 ? Buffer.from(audioBase64.replace(/^data:audio\/\w+;base64,/, ''), 'base64') : undefined);
       const result = await voiceService.transcribeAudio(audioBuffer, mimeType);
       return sendSuccess(res, result);
     } catch (err) {

@@ -26,11 +26,47 @@ export class VoiceService {
   /**
    * Transcribe audio input into text.
    * Supports:
-   * 1. 'browser': Client browser Web Speech API (transcribes locally with 0 latency, high accuracy)
+   * 1. 'groq': Groq Whisper API (whisper-large-v3-turbo) - ultra fast & accurate
    * 2. 'openai': OpenAI Whisper API if OPENAI_API_KEY is configured
-   * 3. 'mock': Graceful fallback
+   * 3. 'browser': Client browser Web Speech API (transcribes locally with 0 latency)
+   * 4. 'mock': Graceful fallback
    */
   async transcribeAudio(audioBuffer?: Buffer, mimeType: string = 'audio/wav'): Promise<VoiceTranscribeResult> {
+    // 1. Groq Whisper Cloud (fastest and free)
+    if ((this.sttProvider === 'groq' || config.ai.groqApiKey) && config.ai.groqApiKey && audioBuffer) {
+      try {
+        const formData = new FormData();
+        const blob = new Blob([audioBuffer], { type: mimeType });
+        formData.append('file', blob, 'recording.wav');
+        formData.append('model', 'whisper-large-v3-turbo');
+        formData.append('temperature', '0');
+
+        const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${config.ai.groqApiKey}`,
+          },
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data: any = await response.json();
+          if (data.text) {
+            return {
+              text: data.text,
+              confidence: 0.98,
+              provider: 'groq-whisper',
+            };
+          }
+        } else {
+          const errText = await response.text();
+          console.warn('[VoiceService] Groq Whisper API responded with HTTP ' + response.status + ':', errText);
+        }
+      } catch (err) {
+        console.warn('Groq Whisper transcription failed, falling back:', err);
+      }
+    }
+
     if (this.sttProvider === 'openai' && config.ai.openaiApiKey && audioBuffer) {
       try {
         const formData = new FormData();

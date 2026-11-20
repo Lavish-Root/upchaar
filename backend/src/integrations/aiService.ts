@@ -54,7 +54,55 @@ export class AIService {
       };
     }
 
-    // 2. Call Grok API (xAI) if configured
+    // 2. Call Groq API if configured or if provider is 'groq'
+    if ((this.provider === 'groq' || config.ai.groqApiKey) && config.ai.groqApiKey) {
+      try {
+        console.log(`🤖 [AIService] Querying Groq API (${config.ai.groqModel || 'llama-3.3-70b-versatile'}) for health query...`);
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${config.ai.groqApiKey}`,
+          },
+          body: JSON.stringify({
+            model: config.ai.groqModel || 'llama-3.3-70b-versatile',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You are PraanSewa AI Healthcare Assistant (Upchaar AI). ' +
+                  'You provide empathetic, evidence-based triage support, home remedies, lifestyle advice, and clinical guidance. ' +
+                  'Support both English and Hindi/Hinglish naturally based on the language of the patient query. ' +
+                  'All clinical consultations on PraanSewa are with verified Government Medical Officers and are 100% Free. ' +
+                  'Never make definitive diagnoses or prescribe scheduled drugs. Always include red flags and advise consulting a verified doctor for diagnosis.',
+              },
+              ...history.slice(-6),
+              { role: 'user', content: query },
+            ],
+            temperature: 0.3,
+          }),
+        });
+
+        if (response.ok) {
+          const data: any = await response.json();
+          const reply = data.choices?.[0]?.message?.content || '';
+          if (reply.trim()) {
+            return {
+              reply: `${reply.trim()}\n\n*${STANDARD_MEDICAL_DISCLAIMER}*`,
+              isEmergency: false,
+              urgencyLevel: 'ROUTINE',
+            };
+          }
+        } else {
+          const errText = await response.text();
+          console.warn(`[AIService] Groq API HTTP ${response.status}:`, errText);
+        }
+      } catch (err) {
+        console.warn('[AIService] Groq API call error:', err);
+      }
+    }
+
+    // 3. Call Grok API (xAI) if configured
     if ((this.provider === 'grok' || config.ai.grokApiKey) && config.ai.grokApiKey) {
       try {
         console.log(`🤖 [AIService] Querying Grok API (${config.ai.grokModel}) for health query...`);
@@ -94,51 +142,10 @@ export class AIService {
           }
         } else {
           const errText = await response.text();
-          console.warn(`[AIService] Grok API responded with HTTP ${response.status}:`, errText);
+          console.warn(`[AIService] Groq API responded with HTTP ${response.status}:`, errText);
         }
       } catch (err) {
         console.warn('[AIService] Grok API call error, falling back to clinical engine:', err);
-      }
-    }
-
-    // 3. If Groq key is provided, call Groq API (GroqCloud OpenAI-compatible)
-    if ((this.provider === 'groq' || config.ai.groqApiKey) && config.ai.groqApiKey) {
-      try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${config.ai.groqApiKey}`,
-          },
-          body: JSON.stringify({
-            model: config.ai.groqModel || 'llama-3.3-70b-versatile',
-            messages: [
-              {
-                role: 'system',
-                content:
-                  'You are PraanSewa Health Assistant. All consultations on PraanSewa are with Government Medical Officers and are 100% Free. ' +
-                  'Provide empathetic, evidence-based health guidance without claiming definitive diagnosis.',
-              },
-              ...history.slice(-6),
-              { role: 'user', content: query },
-            ],
-            temperature: 0.3,
-          }),
-        });
-
-        if (response.ok) {
-          const data: any = await response.json();
-          const reply = data.choices?.[0]?.message?.content || '';
-          if (reply.trim()) {
-            return {
-              reply: `${reply.trim()}\n\n*${STANDARD_MEDICAL_DISCLAIMER}*`,
-              isEmergency: false,
-              urgencyLevel: 'ROUTINE',
-            };
-          }
-        }
-      } catch (err) {
-        console.warn('[AIService] Groq API call error:', err);
       }
     }
 
