@@ -1,4 +1,4 @@
-Project Description – AI Upchaar Smart Healthcare. For Everyone
+# AI Upchaar (PraanSewa) – Smart Healthcare. For Everyone.
 
 AI Upchaar is an AI-powered healthcare access platform designed to address the critical gap in rural and underserved healthcare systems by delivering timely, reliable, and scalable medical assistance.
 
@@ -6,35 +6,50 @@ The platform enables patients to interact with an intelligent AI assistant throu
 
 For non-critical cases, AI Upchaar provides evidence-based guidance, home-care recommendations, and optional medicine support, reducing unnecessary hospital visits. In more serious situations, the system ensures instant escalation to qualified doctors, maintaining a strict doctor-in-the-loop approach where all critical decisions are verified by medical professionals.
 
-The platform is supported by a comprehensive Doctor Portal, enabling healthcare providers to:
+The platform is supported by comprehensive **Patient**, **Doctor**, and **Admin (`/pran_admin`)** portals:
+- 🩺 **Doctor Portal**: Review credentials, verify clinical notes, issue digital prescriptions, and conduct WebRTC teleconsultations.
+- 🏥 **Admin Gateway (`/pran_admin`)**: Manage approved/pending doctors with email contacts, review credentials, oversee patient audits, and track system health.
+- 📍 **Nearby Healthcare Discovery**: 100% live OpenStreetMap facility locator for hospitals, pharmacies, pathology labs, and clinics.
+- 💊 **Prescription & Home Remedies**: AI-assisted doctor prescription generation and verified Ayurvedic/home care remedies.
+- 🎙️ **Multi-lingual Voice & Neural Audio**: Multilingual voice recognition and localized triage.
 
-Review patient cases in real-time
-Access transcripts and clinical assessments
-Validate prescriptions and treatment decisions
-Monitor patient outcomes and system performance
+---
 
-To further enhance accessibility and continuity of care, AI Upchaar integrates:
+## 🚀 Quick Start & Development
 
-📍 Nearby healthcare discovery (hospitals and clinics)
-💊 Prescription and medicine support workflows
-📊 Analytics dashboard for monitoring and insights
-🔐 Secure verification and end-to-end case tracking
+### Prerequisites
+- Node.js (v18+ or v20+)
+- PostgreSQL (or local Docker container)
 
-Designed with a rural-first approach, AI Upchaar focuses on reducing treatment delays, minimizing travel burden, and improving early-stage diagnosis in regions with limited medical infrastructure.
+### 1. Install Dependencies
+```bash
+# Frontend
+npm --prefix frontend install
 
-Additionally, the system provides multi-lingual voice and chat interaction, extending healthcare access to diverse populations across rural regions.
+# Backend
+npm --prefix backend install
+```
 
-One-Line Summary (Optional)
+### 2. Configure Environment
+Copy `.env.example` to `backend/.env` and `frontend/.env`:
+```bash
+cp .env.example backend/.env
+```
 
-AI Upchaar enables accessible, AI-assisted, doctor-verified healthcare for rural communities—bridging the gap between patients and timely medical care.
+### 3. Database Setup (Prisma)
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:seed
+```
 
-## Run Locally
+### 4. Run Development Servers
+```bash
+# Starts both frontend (port 5173) and backend (port 5000)
+npm run dev
+```
 
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 5. Build for Production
+```bash
+npm run build
+```

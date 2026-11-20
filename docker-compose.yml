@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: praansewa_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: praan
+      POSTGRES_PASSWORD: praansewa_secret
+      POSTGRES_DB: praansewa_db
+    ports:
+      # Mapped to host port 5433 to prevent collision with local PostgreSQL installations on port 5432
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U praan -d praansewa_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
