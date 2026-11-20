@@ -111,7 +111,7 @@ export class AIService {
             Authorization: `Bearer ${config.ai.groqApiKey}`,
           },
           body: JSON.stringify({
-            model: config.ai.groqModel || 'llama-3.3-70b-versatile',
+            model: config.ai.groqModel || 'openai/gpt-oss-120b',
             messages: [
               {
                 role: 'system',
