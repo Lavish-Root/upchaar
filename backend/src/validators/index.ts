@@ -137,9 +137,10 @@ export const approvePrescriptionDraftSchema = z.object({
 
 // ================= AI CHAT & VOICE VALIDATORS =================
 export const aiChatSchema = z.object({
-  conversationId: z.string().uuid().optional(),
+  conversationId: z.string().optional(),
   message: z.string().min(1, 'Message cannot be empty'),
   conversationType: z.enum(['HEALTH_ASSISTANT', 'VOICE_ASSISTANT', 'HOME_REMEDIES']).default('HEALTH_ASSISTANT'),
+  language: z.string().optional(),
 });
 
 export const aiVoiceTranscribeSchema = z.object({

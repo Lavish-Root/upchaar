@@ -9,66 +9,93 @@ import { AIRole } from '@prisma/client';
 export class AIController {
   async chat(req: Request, res: Response, next: NextFunction) {
     try {
-      const { message, conversationId, conversationType } = aiChatSchema.parse(req.body);
-      const userId = req.user!.userId;
+      const { message, conversationId, conversationType, language } = aiChatSchema.parse(req.body);
+      const userId = req.user?.userId || 'anonymous-patient';
 
-      // Ensure conversation exists or create one
       let convId = conversationId;
-      if (!convId) {
-        const title = message.slice(0, 40) + '...';
-        const newConv = await prisma.aIConversation.create({
+      let formattedHistory: any[] = [];
+
+      // Attempt to load from / save to DB with graceful fallback if DB is temporarily unreachable
+      try {
+        if (!convId) {
+          const title = message.slice(0, 40) + '...';
+          const newConv = await prisma.aIConversation.create({
+            data: {
+              userId,
+              title,
+              conversationType,
+            },
+          });
+          convId = newConv.id;
+        }
+
+        // Save user message
+        await prisma.aIMessage.create({
           data: {
-            userId,
-            title,
-            conversationType,
+            conversationId: convId,
+            role: AIRole.USER,
+            content: message,
           },
         });
-        convId = newConv.id;
+
+        // Fetch recent history
+        const history = await prisma.aIMessage.findMany({
+          where: { conversationId: convId },
+          take: 6,
+          orderBy: { createdAt: 'desc' },
+        });
+
+        formattedHistory = history.reverse().map((m) => ({
+          role: m.role.toLowerCase() as 'user' | 'assistant' | 'system',
+          content: m.content,
+        }));
+      } catch (dbErr) {
+        console.warn('AIController: Database save skipped (operating in memory/offline mode):', dbErr instanceof Error ? dbErr.message : dbErr);
+        if (!convId) {
+          convId = 'conv_' + Date.now();
+        }
       }
 
-      // Save user message
-      await prisma.aIMessage.create({
-        data: {
-          conversationId: convId,
-          role: AIRole.USER,
-          content: message,
-        },
-      });
+      // Generate AI response with clinical triage, home remedies & multilingual support
+      const result = await aiService.processHealthQuery(message, formattedHistory, language);
 
-      // Fetch recent history
-      const history = await prisma.aIMessage.findMany({
-        where: { conversationId: convId },
-        take: 6,
-        orderBy: { createdAt: 'desc' },
-      });
+      // Attempt to persist assistant message
+      let savedAssistantMsg: any = {
+        id: 'msg_' + Date.now(),
+        conversationId: convId,
+        role: 'ASSISTANT',
+        content: result.reply,
+        metadata: JSON.stringify({
+          isEmergency: result.isEmergency,
+          urgencyLevel: result.urgencyLevel,
+          emergencyCategory: result.emergencyCategory,
+        }),
+      };
 
-      const formattedHistory = history.reverse().map((m) => ({
-        role: m.role.toLowerCase() as 'user' | 'assistant' | 'system',
-        content: m.content,
-      }));
-
-      // Generate AI response with clinical triage
-      const result = await aiService.processHealthQuery(message, formattedHistory);
-
-      // Save assistant message
-      const savedAssistantMsg = await prisma.aIMessage.create({
-        data: {
-          conversationId: convId,
-          role: AIRole.ASSISTANT,
-          content: result.reply,
-          metadata: JSON.stringify({
-            isEmergency: result.isEmergency,
-            urgencyLevel: result.urgencyLevel,
-            emergencyCategory: result.emergencyCategory,
-          }),
-        },
-      });
+      try {
+        savedAssistantMsg = await prisma.aIMessage.create({
+          data: {
+            conversationId: convId,
+            role: AIRole.ASSISTANT,
+            content: result.reply,
+            metadata: JSON.stringify({
+              isEmergency: result.isEmergency,
+              urgencyLevel: result.urgencyLevel,
+              emergencyCategory: result.emergencyCategory,
+            }),
+          },
+        });
+      } catch (e) {
+        // DB save fallback
+      }
 
       return sendSuccess(res, {
         conversationId: convId,
         message: savedAssistantMsg,
+        reply: result.reply,
         isEmergency: result.isEmergency,
         urgencyLevel: result.urgencyLevel,
+        emergencyCategory: result.emergencyCategory,
       });
     } catch (err) {
       next(err);
@@ -139,8 +166,8 @@ export class AIController {
 
   async voiceTurn(req: Request, res: Response, next: NextFunction) {
     try {
-      const { text } = req.body;
-      const result = await voiceService.processVoiceTurn(text || 'Hello doctor');
+      const { text, language } = req.body;
+      const result = await voiceService.processVoiceTurn(text || 'Hello doctor', language);
       return sendSuccess(res, result);
     } catch (err) {
       next(err);

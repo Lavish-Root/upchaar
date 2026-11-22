@@ -148,8 +148,8 @@ export class VoiceService {
   /**
    * End-to-end Voice Conversation turn: STT -> AI -> TTS
    */
-  async processVoiceTurn(inputText: string) {
-    const aiResponse = await aiService.processHealthQuery(inputText);
+  async processVoiceTurn(inputText: string, language?: string) {
+    const aiResponse = await aiService.processHealthQuery(inputText, [], language);
     const speechResult = await this.synthesizeVoice(aiResponse.reply);
 
     return {

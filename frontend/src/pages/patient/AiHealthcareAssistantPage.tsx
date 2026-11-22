@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
-import { Bot, Send, AlertTriangle, ShieldAlert, RefreshCw, Mic, MicOff, Volume2, StopCircle } from 'lucide-react';
+import {
+  Bot,
+  Send,
+  AlertTriangle,
+  ShieldAlert,
+  RefreshCw,
+  Mic,
+  MicOff,
+  Volume2,
+  StopCircle,
+  Stethoscope,
+  PhoneCall,
+  Video,
+  Languages,
+  Sparkles,
+  ArrowRight,
+} from 'lucide-react';
 import { Button } from '../../components/common/Button';
 
 interface Message {
@@ -8,14 +25,32 @@ interface Message {
   role: 'USER' | 'ASSISTANT' | 'SYSTEM';
   content: string;
   isEmergency?: boolean;
+  urgencyLevel?: 'EMERGENCY' | 'SERIOUS' | 'ROUTINE';
+  emergencyCategory?: string;
 }
 
+const SUPPORTED_LANGUAGES = [
+  { code: 'en-IN', name: 'English (India)', speechLang: 'en-IN' },
+  { code: 'hi-IN', name: 'हिन्दी (Hindi)', speechLang: 'hi-IN' },
+  { code: 'hinglish', name: 'Hinglish (हिंग्लिश)', speechLang: 'hi-IN' },
+  { code: 'bn-IN', name: 'বাংলা (Bengali)', speechLang: 'bn-IN' },
+  { code: 'mr-IN', name: 'मराठी (Marathi)', speechLang: 'mr-IN' },
+  { code: 'gu-IN', name: 'ગુજરાતી (Gujarati)', speechLang: 'gu-IN' },
+  { code: 'ta-IN', name: 'தமிழ் (Tamil)', speechLang: 'ta-IN' },
+  { code: 'te-IN', name: 'తెలుగు (Telugu)', speechLang: 'te-IN' },
+];
+
 export const AiHealthcareAssistantPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [selectedLanguage, setSelectedLanguage] = useState('hi-IN');
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'ASSISTANT',
       content:
-        'Hello! I am your Upchaar AI Health Assistant powered by Groq LLaMA-3.3. I provide evidence-based triage support, symptom guidance, home remedies, and emergency alerts in English and Hindi (हिन्दी).\n\nAll clinical consultations on Upchaar are with verified Government Medical Officers and are 100% Free. How can I assist you today?',
+        'नमस्ते! मैं Upchaar AI क्लीनिकल हेल्थ असिस्टेंट हूँ (Powered by Groq LLaMA-3.3)।\n\n' +
+        'मैं आपके लक्षणों की प्राथमिक जांच (Clinical Triage), प्रामाणिक घरेलू उपचार (Evidence-Based Home Remedies), और आपातकालीन सहायता प्रदान करता हूँ।\n\n' +
+        'Upchaar पर सभी सरकारी विशेषज्ञ डॉक्टरों से वीडियो व ऑडियो परामर्श 100% निःशुल्क हैं। आज मैं आपकी क्या सहायता कर सकता हूँ?',
+      urgencyLevel: 'ROUTINE',
     },
   ]);
   const [conversationId, setConversationId] = useState<string | undefined>();
@@ -61,7 +96,7 @@ export const AiHealthcareAssistantPage: React.FC = () => {
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser. Please use Chrome/Edge or the Voice Assistant page.');
+      alert('Speech recognition is not supported in this browser. Please use Chrome/Edge.');
       return;
     }
 
@@ -70,7 +105,9 @@ export const AiHealthcareAssistantPage: React.FC = () => {
       recognitionRef.current = recognition;
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = 'en-IN';
+
+      const langObj = SUPPORTED_LANGUAGES.find((l) => l.code === selectedLanguage);
+      recognition.lang = langObj?.speechLang || 'hi-IN';
 
       recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event: any) => {
@@ -101,11 +138,21 @@ export const AiHealthcareAssistantPage: React.FC = () => {
 
     const cleanText = text
       .replace(/[*#_`>]/g, '')
-      .replace(/🚨|⚠️|💊|🩺/g, '')
-      .slice(0, 450);
+      .replace(/🚨|⚠️|💊|🩺|🌿|👨‍⚕️|👩‍⚕️/g, '')
+      .slice(0, 500);
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      const prefix = selectedLanguage === 'hi-IN' || selectedLanguage === 'hinglish' ? 'hi' : selectedLanguage.slice(0, 2);
+      const matchedVoice = voices.find((v) => v.lang.toLowerCase().startsWith(prefix));
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+      }
+    }
+
     utterance.onend = () => setSpeakingIdx(null);
     utterance.onerror = () => setSpeakingIdx(null);
 
@@ -128,18 +175,21 @@ export const AiHealthcareAssistantPage: React.FC = () => {
         message: userText,
         conversationId,
         conversationType: 'HEALTH_ASSISTANT',
+        language: selectedLanguage,
       });
 
       const data = res.data?.data || res.data || res;
       if (data) {
         setConversationId(data.conversationId);
-        const replyContent = data.message?.content || data.reply || 'Thank you for consulting. Please consult a doctor for diagnosis.';
+        const replyContent = data.reply || data.message?.content || 'Thank you for consulting. Please consult a doctor for diagnosis.';
         setMessages((prev) => [
           ...prev,
           {
             role: 'ASSISTANT',
             content: replyContent,
             isEmergency: data.isEmergency,
+            urgencyLevel: data.urgencyLevel,
+            emergencyCategory: data.emergencyCategory,
           },
         ]);
       }
@@ -157,11 +207,11 @@ export const AiHealthcareAssistantPage: React.FC = () => {
   };
 
   const samplePrompts = [
-    'I have a sore throat and mild headache since yesterday',
-    'What are the first-line home care measures for acute fever?',
     'पेट में गैस और एसिडिटी के घरेलू उपाय क्या हैं?',
+    'I have a sore throat, mild cough and fever since yesterday',
+    'Cold and cough home remedies (सर्दी जुकाम का काढ़ा)',
     'When should chest tightness be treated as a medical emergency?',
-    'Tips for managing cold and cough naturally at home',
+    'माइग्रेन और सिरदर्द से तुरंत राहत पाने के उपाय',
   ];
 
   return (
@@ -175,11 +225,11 @@ export const AiHealthcareAssistantPage: React.FC = () => {
       </div>
 
       {/* Chat Container */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-md flex flex-col h-[650px] overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-md flex flex-col h-[700px] overflow-hidden">
         {/* Chat Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold shadow-xs">
               <Bot className="w-5 h-5" />
             </div>
             <div>
@@ -190,32 +240,65 @@ export const AiHealthcareAssistantPage: React.FC = () => {
                 </span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </h2>
-              <p className="text-[11px] text-slate-500">Fast Groq-powered clinical triage, symptom analysis & free Govt. doctor referrals (English / हिन्दी)</p>
+              <p className="text-[11px] text-slate-500">
+                Clinical Triage • Authentic Home Remedies • 1-Click Doctor Consultation
+              </p>
             </div>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setMessages([
-                {
-                  role: 'ASSISTANT',
-                  content: 'Conversation reset. How can I assist you with your health questions?',
-                },
-              ]);
-              setConversationId(undefined);
-            }}
-          >
-            <RefreshCw className="w-3.5 h-3.5 mr-1" />
-            New Chat
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs shadow-2xs">
+              <Languages className="w-3.5 h-3.5 text-teal-600" />
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                className="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+              >
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Direct Connect to Doctor Button in Header */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/doctors')}
+              className="text-teal-700 border-teal-300 hover:bg-teal-50 text-xs font-bold shadow-2xs"
+            >
+              <Stethoscope className="w-3.5 h-3.5 mr-1" />
+              Connect to Doctor
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setMessages([
+                  {
+                    role: 'ASSISTANT',
+                    content: 'बातचीत रीसेट हो गई है। आप अपने लक्षणों या घरेलू उपचार के बारे में पूछ सकते हैं।',
+                  },
+                ]);
+                setConversationId(undefined);
+              }}
+              title="Reset conversation"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
 
         {/* Messages Scroll Area */}
         <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
           {messages.map((msg, idx) => {
             const isUser = msg.role === 'USER';
+            const isSeriousOrEmergency = msg.isEmergency || msg.urgencyLevel === 'EMERGENCY' || msg.urgencyLevel === 'SERIOUS';
+
             return (
               <div
                 key={idx}
@@ -227,43 +310,109 @@ export const AiHealthcareAssistantPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="max-w-[85%] space-y-1">
+                <div className="max-w-[85%] space-y-2">
                   <div
                     className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-line shadow-xs ${
                       isUser
                         ? 'bg-teal-600 text-white rounded-tr-none'
-                        : msg.isEmergency
-                        ? 'bg-rose-50 text-rose-900 border border-rose-300 rounded-tl-none font-medium'
+                        : isSeriousOrEmergency
+                        ? 'bg-rose-50 text-rose-950 border-2 border-rose-300 rounded-tl-none font-medium'
                         : 'bg-slate-100 text-slate-800 rounded-tl-none'
                     }`}
                   >
-                    {msg.isEmergency && (
-                      <div className="flex items-center gap-1.5 text-rose-700 font-bold mb-2">
-                        <AlertTriangle className="w-4 h-4" />
-                        CRITICAL EMERGENCY ALERT
+                    {isSeriousOrEmergency && (
+                      <div className="flex items-center gap-1.5 text-rose-700 font-extrabold mb-2 text-xs uppercase tracking-wider">
+                        <AlertTriangle className="w-4 h-4 text-rose-600 animate-pulse" />
+                        CRITICAL MEDICAL ATTENTION REQUIRED
                       </div>
                     )}
                     {msg.content}
                   </div>
 
-                  {!isUser && (
-                    <button
-                      onClick={() => speakMessage(msg.content, idx)}
-                      className="text-[11px] text-slate-400 hover:text-teal-700 flex items-center gap-1 px-1 transition"
-                      title="Listen to this reply"
-                    >
-                      {speakingIdx === idx ? (
-                        <>
-                          <StopCircle className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-                          <span className="text-rose-500 font-semibold">Stop Audio</span>
-                        </>
-                      ) : (
-                        <>
-                          <Volume2 className="w-3.5 h-3.5" />
-                          <span>Listen</span>
-                        </>
-                      )}
-                    </button>
+                  {/* Doctor Escalation Card if Serious or Emergency */}
+                  {!isUser && isSeriousOrEmergency && (
+                    <div className="p-3.5 bg-rose-100/80 border border-rose-300 rounded-2xl space-y-2.5 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                          <Stethoscope className="w-4 h-4 text-rose-700" />
+                          तत्काल डॉक्टर से परामर्श लें (Immediate Clinical Action):
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-rose-850 leading-normal">
+                        आपके लक्षणों के आधार पर चिकित्सीय परामर्श आवश्यक है। आप तुरंत सरकारी विशेषज्ञ डॉक्टर से निःशुल्क वीडियो कॉल कर सकते हैं या आपातकालीन 112 पर कॉल करें।
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => navigate('/doctors')}
+                          className="text-xs font-bold px-3 py-1.5 shadow-sm flex items-center gap-1.5"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          Connect with Verified Doctor Now (Free)
+                        </Button>
+                        <a
+                          href="tel:112"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-rose-300 text-xs font-bold text-rose-700 hover:bg-rose-50 transition shadow-2xs"
+                        >
+                          <PhoneCall className="w-3.5 h-3.5" />
+                          Emergency 112 / 102
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Non-emergency Quick Doctor Referral Action */}
+                  {!isUser && !isSeriousOrEmergency && idx > 0 && (
+                    <div className="flex items-center justify-between pt-0.5">
+                      <button
+                        onClick={() => navigate('/doctors')}
+                        className="inline-flex items-center gap-1.5 text-[11px] text-teal-700 hover:text-teal-900 font-semibold bg-teal-50 px-2.5 py-1 rounded-lg border border-teal-200 transition"
+                      >
+                        <Stethoscope className="w-3 h-3" />
+                        डॉक्टर से मुफ्त वीडियो सलाह लें (Connect to Doctor)
+                        <ArrowRight className="w-2.5 h-2.5" />
+                      </button>
+
+                      <button
+                        onClick={() => speakMessage(msg.content, idx)}
+                        className="text-[11px] text-slate-400 hover:text-teal-700 flex items-center gap-1 px-1 transition"
+                        title="Listen to this reply"
+                      >
+                        {speakingIdx === idx ? (
+                          <>
+                            <StopCircle className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                            <span className="text-rose-500 font-semibold">Stop Audio</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-3.5 h-3.5" />
+                            <span>Listen</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {!isUser && isSeriousOrEmergency && (
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => speakMessage(msg.content, idx)}
+                        className="text-[11px] text-slate-400 hover:text-teal-700 flex items-center gap-1 px-1 transition"
+                      >
+                        {speakingIdx === idx ? (
+                          <>
+                            <StopCircle className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                            <span className="text-rose-500 font-semibold">Stop Audio</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-3.5 h-3.5" />
+                            <span>Listen</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -281,9 +430,9 @@ export const AiHealthcareAssistantPage: React.FC = () => {
               <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold shrink-0">
                 AI
               </div>
-              <div className="bg-slate-100 p-3 rounded-2xl text-xs text-slate-500 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-teal-600 animate-ping"></span>
-                Groq AI is evaluating symptoms and clinical references...
+              <div className="bg-slate-100 p-3.5 rounded-2xl text-xs text-slate-600 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-600 animate-ping"></span>
+                Evaluating symptoms, clinical triage & evidence-based Indian home remedies...
               </div>
             </div>
           )}
@@ -316,14 +465,18 @@ export const AiHealthcareAssistantPage: React.FC = () => {
                 ? 'bg-rose-500 text-white border-rose-600 animate-pulse'
                 : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
             }`}
-            title={isListening ? 'Listening... click to stop' : 'Click to speak'}
+            title={isListening ? 'Listening... click to stop' : 'Click to speak (Voice Input)'}
           >
             {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
           </button>
 
           <input
             type="text"
-            placeholder={isListening ? 'Listening to your voice...' : 'Type symptoms or ask health question (e.g., headache for 2 days / सिरदर्द)...'}
+            placeholder={
+              isListening
+                ? 'Listening to your voice...'
+                : 'लक्षण या बीमारी का नाम लिखें (e.g. 2 din se sar dard aur sardi hai / fever home remedies)...'
+            }
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             disabled={sending}

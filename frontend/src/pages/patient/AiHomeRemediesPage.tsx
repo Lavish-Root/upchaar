@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { HomeRemedy, HomeRemedyCategory } from '../../types';
 import {
@@ -14,12 +15,16 @@ import {
   Clock,
   ArrowRight,
   Send,
+  Stethoscope,
+  Video,
+  PhoneCall,
 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
 export const AiHomeRemediesPage: React.FC = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<HomeRemedyCategory[]>([]);
   const [remedies, setRemedies] = useState<HomeRemedy[]>([]);
   const [savedRecommendations, setSavedRecommendations] = useState<any[]>([]);
@@ -180,7 +185,7 @@ export const AiHomeRemediesPage: React.FC = () => {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Describe your symptom in natural words..."
+                  placeholder="Describe your symptom in natural words (e.g. sardi khasi ke gharelu upay)..."
                   value={symptomQuery}
                   onChange={(e) => setSymptomQuery(e.target.value)}
                   className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20"
@@ -190,14 +195,44 @@ export const AiHomeRemediesPage: React.FC = () => {
                   Analyze
                 </Button>
               </div>
+
+              {/* Quick Sample Chips */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {[
+                  'गले में खराश और खांसी (Cough & Cold)',
+                  'पेट में गैस और एसिडिटी (Acidity & Gas)',
+                  'हल्दी दूध और रोग प्रतिरोधक क्षमता (Immunity)',
+                  'सिरदर्द और माइग्रेन (Headache relief)',
+                  'अपच और बदहजमी (Indigestion)',
+                ].map((chip, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSymptomQuery(chip)}
+                    className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-[11px] text-slate-600 transition"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
             </form>
 
             {aiGuidance && (
               <div className="p-6 rounded-2xl bg-teal-50/80 border border-teal-200 space-y-4">
                 {aiGuidance.isEmergency && (
-                  <div className="p-3 bg-rose-600 text-white rounded-xl text-xs font-bold flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    EMERGENCY ALERT: Immediate Hospital Care Required!
+                  <div className="p-3 bg-rose-600 text-white rounded-xl text-xs font-bold flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      EMERGENCY ALERT: Immediate Hospital Care Required!
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate('/doctors')}
+                      className="bg-white text-rose-700 text-xs font-bold"
+                    >
+                      Connect to Doctor
+                    </Button>
                   </div>
                 )}
 
@@ -224,6 +259,22 @@ export const AiHomeRemediesPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Doctor Escalation */}
+                <div className="pt-4 border-t border-teal-200/80 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs text-teal-900 font-medium">
+                    ⚠️ यदि लक्षण 48 घंटे से अधिक बने रहें या बढ़ें, तो डॉक्टर से सलाह लें:
+                  </div>
+                  <Button
+                    variant="teal"
+                    size="sm"
+                    onClick={() => navigate('/doctors')}
+                    className="font-bold text-xs"
+                  >
+                    <Stethoscope className="w-3.5 h-3.5 mr-1" />
+                    Connect with Verified Doctor (Free)
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -277,6 +328,20 @@ export const AiHomeRemediesPage: React.FC = () => {
                 Emergency Warning Signs:
               </strong>
               <p className="text-rose-800">{activeRemedy.whenToSeekDoctor}</p>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 flex justify-end">
+              <Button
+                variant="teal"
+                size="sm"
+                onClick={() => {
+                  setActiveRemedy(null);
+                  navigate('/doctors');
+                }}
+              >
+                <Stethoscope className="w-3.5 h-3.5 mr-1" />
+                Consult Verified Doctor (Free)
+              </Button>
             </div>
           </div>
         </Modal>
