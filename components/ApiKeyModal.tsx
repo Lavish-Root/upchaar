@@ -39,11 +39,11 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
         }
 
         const candidateModels = [
-          config.groqModel || 'openai/gpt-oss-120b',
-          'openai/gpt-oss-120b',
-          'openai/gpt-oss-20b',
-          'qwen/qwen3.8-27b',
-          'llama-3.3-70b-versatile'
+          config.groqModel || 'llama-3.3-70b-versatile',
+          'llama-3.3-70b-versatile',
+          'llama-3.1-8b-instant',
+          'mixtral-8x7b-32768',
+          'gemma2-9b-it'
         ];
 
         let successReply = '';
@@ -238,15 +238,14 @@ const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose }) => {
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Groq Model</label>
                 <select
-                  value={config.groqModel || 'openai/gpt-oss-120b'}
+                  value={config.groqModel || 'llama-3.3-70b-versatile'}
                   onChange={(e) => setConfig(prev => ({ ...prev, groqModel: e.target.value }))}
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white text-sm outline-none font-medium"
                 >
-                  <option value="openai/gpt-oss-120b">openai/gpt-oss-120b (High Reasoning & Triage)</option>
-                  <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Fastest Realtime & Doctor Chat)</option>
-                  <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Multilingual)</option>
-                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-                  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (Recommended - High Accuracy & Multilingual)</option>
+                  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Fastest Response Speed)</option>
+                  <option value="mixtral-8x7b-32768">mixtral-8x7b-32768 (General Clinical)</option>
+                  <option value="gemma2-9b-it">gemma2-9b-it (Google Gemma on Groq)</option>
                 </select>
               </div>
             </div>

@@ -52,32 +52,33 @@ export const MOCK_HOSPITALS: Hospital[] = [
 export const MOCK_REMEDIES: HomeRemedy[] = [
   {
     id: 'R-001',
-    title: 'Ginger & Honey Paste',
-    ailment: 'Seasonal Cough & Cold',
+    title: 'Ginger & Honey Paste (अदरक और शहद)',
+    ailment: 'Seasonal Cough & Cold (सर्दी और खांसी)',
     season: Season.WINTER,
-    ingredients: ['Fresh Ginger (1 inch)', 'Raw Honey (1 tbsp)', 'Black Pepper (pinch)'],
+    ingredients: ['Fresh Ginger (1 inch grated)', 'Raw Honey (1 tbsp)', 'Black Pepper powder (pinch)'],
     steps: [
-      'Grate the ginger and extract its juice.',
-      'Mix the ginger juice with honey and black pepper.',
-      'Consume one teaspoon twice a day after meals.'
+      'Grate fresh ginger and squeeze through a cloth to extract juice.',
+      'Mix 1 teaspoon ginger juice with 1 tablespoon raw honey and a pinch of black pepper.',
+      'Consume slowly twice a day. Do not drink water immediately for 15 minutes.'
     ],
+    safetyNotes: 'Avoid excess ginger if suffering from severe acid reflux. Suitable for children above 2 years.',
     doctorVerified: true,
     doctorName: 'Dr. A. Sharma',
     rating: 4.8,
-    ratingCount: 124
+    ratingCount: 142
   },
   {
     id: 'R-002',
-    title: 'Natural ORS (Salt-Sugar-Lemon)',
-    ailment: 'Dehydration & Heatstroke',
+    title: 'Natural ORS & Lemon Electrolyte (नींबू पानी और ओआरएस)',
+    ailment: 'Dehydration & Heat Exhaustion (डिहाइड्रेशन और कमजोरी)',
     season: Season.SUMMER,
-    ingredients: ['Water (1 liter)', 'Sugar (6 tsp)', 'Salt (0.5 tsp)', 'Lemon (half)'],
+    ingredients: ['Boiled & cooled water (1 liter)', 'Sugar (6 tsp)', 'Salt (0.5 tsp)', 'Fresh Lemon juice (half lemon)'],
     steps: [
-      'Boil and cool the water.',
-      'Dissolve sugar and salt thoroughly.',
-      'Squeeze half a lemon for Vitamin C.',
-      'Sip slowly throughout the day.'
+      'Dissolve clean sugar and salt thoroughly in 1 liter of safe drinking water.',
+      'Squeeze fresh lemon juice for electrolytes and Vitamin C.',
+      'Sip slowly throughout the day, especially after sweating or physical labour.'
     ],
+    safetyNotes: 'Diabetic patients should monitor sugar intake and consult a doctor.',
     doctorVerified: true,
     doctorName: 'Dr. P. Kaur',
     rating: 4.9,
@@ -85,35 +86,139 @@ export const MOCK_REMEDIES: HomeRemedy[] = [
   },
   {
     id: 'R-003',
-    title: 'Tulsi & Neem Decoction',
-    ailment: 'Viral Fever & Flu',
-    season: Season.MONSOON,
-    ingredients: ['Tulsi Leaves (7-10)', 'Neem Leaves (3-4)', 'Water (2 cups)'],
+    title: 'Golden Turmeric Milk (हल्दी वाला दूध)',
+    ailment: 'Body Ache, Joint Pain & Immunity (बदन दर्द और कमजोरी)',
+    season: Season.WINTER,
+    ingredients: ['Warm cow milk (1 glass)', 'Pure Turmeric powder (0.5 tsp)', 'Black pepper (pinch)', 'Cardamom (1 pod)'],
     steps: [
-      'Wash the leaves thoroughly.',
-      'Boil leaves in water until reduced to half.',
-      'Strain and drink warm twice a day.'
+      'Warm the milk on low flame with turmeric, crushed black pepper, and cardamom for 3-5 minutes.',
+      'Add a small piece of jaggery or half tsp honey after turning off flame.',
+      'Drink warm 30 minutes before bedtime.'
     ],
+    safetyNotes: 'Black pepper enhances curcumin absorption by 2000%. Safe for all ages.',
     doctorVerified: true,
     doctorName: 'Dr. A. Sharma',
-    rating: 4.7,
-    ratingCount: 89
+    rating: 4.9,
+    ratingCount: 285
   },
   {
     id: 'R-004',
-    title: 'Buttermilk with Cumin',
-    ailment: 'Digestion & Bloating',
-    season: Season.SUMMER,
-    ingredients: ['Fresh Curd (0.5 cup)', 'Water (1 cup)', 'Roasted Cumin Powder (0.5 tsp)'],
+    title: 'Ajwain, Jeera & Black Salt Infusion (अजवाइन जीरा पानी)',
+    ailment: 'Severe Acidity, Gas & Indigestion (एसिडिटी और पेट फूलना)',
+    season: Season.ALL,
+    ingredients: ['Ajwain seeds (1 tsp)', 'Jeera / Cumin (1 tsp)', 'Black Salt / Kala Namak (pinch)', 'Water (2 cups)'],
     steps: [
-      'Whisk curd and water together.',
-      'Add cumin powder and a pinch of black salt.',
-      'Drink chilled after lunch to aid digestion.'
+      'Boil ajwain and jeera in 2 cups of water until reduced to 1 cup.',
+      'Strain into a cup and stir in a pinch of black salt.',
+      'Sip warm after heavy meals or at onset of stomach heaviness.'
     ],
+    safetyNotes: 'Highly effective for rapid gastric relief. Pregnant women should consume in moderation.',
     doctorVerified: true,
     doctorName: 'Dr. R. Singh',
+    rating: 4.8,
+    ratingCount: 198
+  },
+  {
+    id: 'R-005',
+    title: 'Eucalyptus & Ajwain Steam Inhalation (भाप लेना)',
+    ailment: 'Nasal Blockage, Sinusitis & Headache (बंद नाक और सिरदर्द)',
+    season: Season.MONSOON,
+    ingredients: ['Boiling water (1 bowl)', 'Ajwain seeds (1 tsp)', 'Eucalyptus oil or Nilgiri tail (2 drops)'],
+    steps: [
+      'Bring water to rolling boil in a wide vessel.',
+      'Add ajwain and 2 drops of eucalyptus oil.',
+      'Cover head with a towel 12 inches above water and inhale steam deeply through nose for 7-10 minutes.'
+    ],
+    safetyNotes: 'Keep eyes closed to avoid irritation. Keep safe distance from boiling water for young children.',
+    doctorVerified: true,
+    doctorName: 'Dr. P. Kaur',
+    rating: 4.7,
+    ratingCount: 165
+  },
+  {
+    id: 'R-006',
+    title: 'Tulsi, Giloy & Kali Mirch Kadha (तुलसी गिलोय काढ़ा)',
+    ailment: 'Viral Flu & Seasonal Fever (वायरल बुखार और जुकाम)',
+    season: Season.MONSOON,
+    ingredients: ['Fresh Tulsi leaves (8-10)', 'Giloy stem or juice (1 inch)', 'Black Pepper (3 corns)', 'Jaggery (small piece)'],
+    steps: [
+      'Crush tulsi, giloy, and black peppercorns lightly.',
+      'Boil in 2 cups of water on medium flame until 1 cup remains.',
+      'Add jaggery for taste and drink warm morning and evening.'
+    ],
+    safetyNotes: 'Natural antipyretic and leukocyte booster. Consult doctor if fever exceeds 102°F.',
+    doctorVerified: true,
+    doctorName: 'Dr. A. Sharma',
+    rating: 4.8,
+    ratingCount: 215
+  },
+  {
+    id: 'R-007',
+    title: 'Warm Salt Water Gargle & Mulethi (नमक पानी गरारे)',
+    ailment: 'Sore Throat & Tonsil Irritation (गले में खराश और दर्द)',
+    season: Season.ALL,
+    ingredients: ['Warm drinking water (1 glass)', 'Rock salt or sea salt (0.5 tsp)', 'Turmeric (pinch)'],
+    steps: [
+      'Dissolve salt and turmeric in comfortably warm water.',
+      'Gargle deeply in the back of the throat for 30 seconds at a time.',
+      'Repeat 3-4 times in succession, 3 times a day.'
+    ],
+    safetyNotes: 'Do not swallow the gargle solution. Spitting clears bacterial pathogens and reduces throat edema.',
+    doctorVerified: true,
+    doctorName: 'Dr. R. Singh',
+    rating: 4.9,
+    ratingCount: 340
+  },
+  {
+    id: 'R-008',
+    title: 'Buttermilk with Roasted Cumin & Mint (छाछ और भुना जीरा)',
+    ailment: 'Gut Health, Heat Burn & Diarrhea (पेट की गर्मी और लू)',
+    season: Season.SUMMER,
+    ingredients: ['Fresh plain Curd (0.5 cup)', 'Water (1 cup)', 'Roasted Cumin / Bhuna Jeera (0.5 tsp)', 'Fresh Mint leaves (4-5)'],
+    steps: [
+      'Blend or hand-whisk curd and cool water until smooth.',
+      'Stir in freshly roasted cumin powder, crushed mint, and a touch of rock salt.',
+      'Drink chilled after midday meals.'
+    ],
+    safetyNotes: 'Rich in natural probiotics (Lactobacillus) to restore healthy digestive flora.',
+    doctorVerified: true,
+    doctorName: 'Dr. P. Kaur',
+    rating: 4.7,
+    ratingCount: 180
+  },
+  {
+    id: 'R-009',
+    title: 'Methi Seed Soaked Water (मेथी का पानी)',
+    ailment: 'Joint Stiffness & Morning Aches (जोड़ों का दर्द और अकड़न)',
+    season: Season.ALL,
+    ingredients: ['Fenugreek / Methi seeds (1 tsp)', 'Drinking water (1 glass)'],
+    steps: [
+      'Soak 1 teaspoon methi seeds in 1 glass of water overnight.',
+      'In the morning, drink the water on an empty stomach and chew the softened seeds.',
+      'Follow consistently for 3-4 weeks for noticeable reduction in stiffness.'
+    ],
+    safetyNotes: 'Also beneficial for glycemic balance. Discontinue if loose stools occur.',
+    doctorVerified: true,
+    doctorName: 'Dr. A. Sharma',
     rating: 4.6,
-    ratingCount: 156
+    ratingCount: 135
+  },
+  {
+    id: 'R-010',
+    title: 'Coconut Oil & Raw Honey Application (नारियल तेल और शहद)',
+    ailment: 'Mouth Ulcers & Canker Sores (मुंह के छाले)',
+    season: Season.ALL,
+    ingredients: ['Virgin Coconut oil (few drops)', 'Raw Honey (few drops)'],
+    steps: [
+      'Rinse mouth gently with clean water.',
+      'Apply raw honey or pure coconut oil directly onto the ulcer using a clean fingertip.',
+      'Leave for 5 minutes before rinsing. Repeat 3-4 times daily.'
+    ],
+    safetyNotes: 'Has strong anti-inflammatory and microbial protective properties. Harmless if swallowed.',
+    doctorVerified: true,
+    doctorName: 'Dr. R. Singh',
+    rating: 4.8,
+    ratingCount: 112
   }
 ];
 

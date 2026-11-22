@@ -26,5 +26,21 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "App.tsx",
+    "index.tsx",
+    "types.ts",
+    "components/**/*",
+    "services/**/*",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "backend",
+    "frontend",
+    "server",
+    "app",
+    "src",
+    "drizzle.config.ts"
+  ]
 }

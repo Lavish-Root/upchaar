@@ -6,11 +6,11 @@ import {
   Home, Volume2, Calendar, Truck, UserPlus, Image as ImageIcon,
   CreditCard, Banknote, Navigation, Smartphone, CheckCircle,
   Leaf, Sun, Snowflake, CloudRain, Zap, Heart, Info, ThumbsUp,
-  ExternalLink, Smile, Search, Pill, FlaskConical, Ambulance, Building, Clock, VolumeX
+  ExternalLink, Smile, Search, Pill, FlaskConical, Ambulance, Building, Clock, VolumeX, AlertTriangle, Stethoscope, Sparkles
 } from 'lucide-react';
 import { Message, CaseSeverity, MedicalCase, CaseStatus, User, Appointment, Hospital, Season, HomeRemedy, HealthTip, WellnessActivity, ActiveVideoSession } from '../types';
 import { startNewChat, analyzeCase, TriageResult, getRealNearbyHospitals, searchIndianLocation, reverseGeocodeLocality } from '../services/geminiService';
-import { UniversalChatSession } from '../services/aiService';
+import { UniversalChatSession, generateCustomHomeRemedy, CustomHomeRemedyResult } from '../services/aiService';
 import { playRealisticVoice, stopRealisticVoice, setVoiceStateListener } from '../services/voiceService';
 
 import { MOCK_REMEDIES, MOCK_HEALTH_TIPS, MOCK_WELLNESS_ACTIVITIES } from '../services/mockData';
@@ -104,6 +104,17 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
   const [selectedActivity, setSelectedActivity] = useState<WellnessActivity | null>(null);
   const [remedySeasonFilter, setRemedySeasonFilter] = useState<'AUTO' | 'ALL' | 'SUMMER' | 'MONSOON' | 'WINTER'>('AUTO');
   const [wellnessCategoryFilter, setWellnessCategoryFilter] = useState<'ALL' | 'ELDERLY' | 'ADULTS'>('ALL');
+
+  // Home Remedies AI & Search States
+  const [remedySearchQuery, setRemedySearchQuery] = useState('');
+  const [customSymptomInput, setCustomSymptomInput] = useState('');
+  const [isGeneratingRemedy, setIsGeneratingRemedy] = useState(false);
+  const [customAiRemedy, setCustomAiRemedy] = useState<CustomHomeRemedyResult | null>(null);
+  const [customRemedyLang, setCustomRemedyLang] = useState<'Hindi' | 'English' | 'Punjabi'>('Hindi');
+
+  // Text Chat Dictation States
+  const [isDictatingText, setIsDictatingText] = useState(false);
+  const dictationRef = useRef<any>(null);
 
   // Remedy UI interactions state
   const [likedRemedies, setLikedRemedies] = useState<Record<string, boolean>>({});
@@ -347,6 +358,56 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       } catch (e) { }
     } else {
       alert("Voice input is not supported in this browser. Please type your message.");
+    }
+  };
+
+  const toggleTextDictation = () => {
+    if (isDictatingText) {
+      if (dictationRef.current) {
+        try { dictationRef.current.stop(); } catch (e) {}
+      }
+      setIsDictatingText(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome/Edge or type your message.");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      dictationRef.current = recognition;
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = speechInputLang;
+
+      recognition.onstart = () => setIsDictatingText(true);
+      recognition.onresult = (event: any) => {
+        const text = event.results[0][0].transcript;
+        setInputText(prev => prev ? `${prev} ${text}` : text);
+        setIsDictatingText(false);
+      };
+      recognition.onerror = () => setIsDictatingText(false);
+      recognition.onend = () => setIsDictatingText(false);
+
+      recognition.start();
+    } catch (e) {
+      setIsDictatingText(false);
+    }
+  };
+
+  const handleGenerateCustomRemedy = async () => {
+    if (!customSymptomInput.trim() || isGeneratingRemedy) return;
+    setIsGeneratingRemedy(true);
+    try {
+      const remedy = await generateCustomHomeRemedy(customSymptomInput.trim(), customRemedyLang);
+      setCustomAiRemedy(remedy);
+    } catch (e) {
+      console.warn("Failed to generate custom remedy", e);
+    } finally {
+      setIsGeneratingRemedy(false);
     }
   };
 
@@ -1018,48 +1079,177 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
   const renderHomeRemedies = () => (
     <div className="flex flex-col h-full bg-slate-50">
-      <div className="bg-white border-b border-slate-200 p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
-        <button onClick={() => setCurrentView('HOME')}><ArrowLeft size={24} className="text-slate-500" /></button>
-        <h2 className="font-bold text-slate-800">Home Remedies</h2>
+      <div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setCurrentView('HOME')}><ArrowLeft size={24} className="text-slate-500 hover:text-slate-800" /></button>
+          <div>
+            <h2 className="font-bold text-slate-800 flex items-center gap-2">
+              <span>🌿 Home Remedies & Herbal Care</span>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Doctor Verified</span>
+            </h2>
+            <p className="text-xs text-slate-500">Clinically reviewed traditional Indian remedies for everyday wellness</p>
+          </div>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase">Current Season</p>
-            <p className="text-lg font-bold text-slate-800 capitalize">{currentSeason.toLowerCase()}</p>
-          </div>
-          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center shadow-inner">
-            {getSeasonIcon(currentSeason)}
-          </div>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {[
-            { key: 'AUTO', label: `Current (${currentSeason})` },
-            { key: 'ALL', label: 'All Seasons' },
-            { key: 'MONSOON', label: 'Monsoon' },
-            { key: 'SUMMER', label: 'Summer' },
-            { key: 'WINTER', label: 'Winter' }
-          ].map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setRemedySeasonFilter(tab.key as any)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                remedySeasonFilter === tab.key
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-amber-50 hover:text-amber-700'
-              }`}
+        
+        {/* AI CUSTOM HOME REMEDY GENERATOR BOX */}
+        <div className="bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-3xl p-5 text-white shadow-lg shadow-amber-600/20">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                <Leaf size={18} className="text-white" />
+              </span>
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base">Ask AI for Custom Ayurvedic Remedy</h3>
+                <p className="text-[11px] text-amber-100">Groq AI powered personalized natural prescription from Indian kitchen ingredients</p>
+              </div>
+            </div>
+            <select
+              value={customRemedyLang}
+              onChange={(e) => setCustomRemedyLang(e.target.value as any)}
+              className="bg-white/20 text-white border border-white/30 text-xs rounded-xl px-2.5 py-1 font-semibold focus:outline-none cursor-pointer"
             >
-              {tab.label}
+              <option value="Hindi" className="text-slate-800">हिन्दी (Hindi)</option>
+              <option value="English" className="text-slate-800">English</option>
+              <option value="Punjabi" className="text-slate-800">ਪੰਜਾਬੀ (Punjabi)</option>
+            </select>
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={customSymptomInput}
+              onChange={(e) => setCustomSymptomInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleGenerateCustomRemedy();
+              }}
+              placeholder="Enter symptom (e.g., gale me kharash, pet me gas, dry cough)..."
+              className="flex-1 px-4 py-2.5 rounded-2xl bg-white text-slate-800 text-xs sm:text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-inner"
+            />
+            <button
+              onClick={handleGenerateCustomRemedy}
+              disabled={isGeneratingRemedy || !customSymptomInput.trim()}
+              className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-bold transition disabled:opacity-50 flex items-center gap-1.5 shadow-md shrink-0"
+            >
+              {isGeneratingRemedy ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Preparing...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>Get Remedy</span>
+                </>
+              )}
             </button>
-          ))}
+          </div>
+
+          {/* AI GENERATED RESULT CARD */}
+          {customAiRemedy && (
+            <div className="mt-4 bg-white text-slate-800 p-4 rounded-2xl shadow-md border border-amber-200 animate-in zoom-in-95 duration-300">
+              <div className="flex items-start justify-between border-b border-amber-100 pb-2 mb-3">
+                <div>
+                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    AI Prescribed Formula
+                  </span>
+                  <h4 className="font-extrabold text-slate-900 text-base mt-1">{customAiRemedy.title}</h4>
+                  <p className="text-xs text-slate-500 font-medium">Target: {customAiRemedy.ailment}</p>
+                </div>
+                <button
+                  onClick={() => playRealisticVoice(`${customAiRemedy.title}. ${customAiRemedy.steps.join('. ')}`)}
+                  className="p-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl transition flex items-center gap-1 text-xs font-bold shrink-0 border border-emerald-200"
+                  title="Listen to remedy"
+                >
+                  <Volume2 size={14} />
+                  <span>Listen</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mb-3">
+                <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-100">
+                  <p className="font-bold text-amber-900 mb-1.5 flex items-center gap-1.5">
+                    <Leaf size={12} className="text-amber-600" /> Ingredients (सामग्री):
+                  </p>
+                  <ul className="space-y-1 text-slate-700">
+                    {customAiRemedy.ingredients.map((ing, idx) => (
+                      <li key={idx} className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full shrink-0"></span>
+                        {ing}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                  <p className="font-bold text-emerald-900 mb-1.5 flex items-center gap-1.5">
+                    <Activity size={12} className="text-emerald-600" /> Preparation & Usage (विधि):
+                  </p>
+                  <ol className="space-y-1 text-slate-700 list-decimal list-inside">
+                    {customAiRemedy.steps.map((st, idx) => (
+                      <li key={idx}>{st}</li>
+                    ))}
+                  </ol>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
+                <p><strong>⚠️ Precautions:</strong> {customAiRemedy.precautions}</p>
+                <p className="text-red-700 font-medium"><strong>🚨 When to see a doctor:</strong> {customAiRemedy.whenToSeeDoctor}</p>
+              </div>
+            </div>
+          )}
         </div>
 
+        {/* SEARCH BAR & SEASON TABS */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+            <input
+              type="text"
+              value={remedySearchQuery}
+              onChange={(e) => setRemedySearchQuery(e.target.value)}
+              placeholder="Search remedies by symptom, title or ingredient (e.g. cough, acidity, ginger)..."
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {[
+                { key: 'AUTO', label: `Current (${currentSeason})` },
+                { key: 'ALL', label: 'All Seasons' },
+                { key: 'MONSOON', label: 'Monsoon' },
+                { key: 'SUMMER', label: 'Summer' },
+                { key: 'WINTER', label: 'Winter' }
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setRemedySeasonFilter(tab.key as any)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                    remedySeasonFilter === tab.key
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-amber-50 hover:text-amber-700'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 font-semibold shrink-0">
+              {getSeasonIcon(currentSeason)}
+              <span className="capitalize">{currentSeason.toLowerCase()} Season Active</span>
+            </div>
+          </div>
+        </div>
+
+        {/* REMEDIES GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {MOCK_REMEDIES.filter(r => {
-            if (remedySeasonFilter === 'ALL') return true;
-            if (remedySeasonFilter === 'AUTO') return r.season === currentSeason || r.season === Season.ALL;
-            return r.season === remedySeasonFilter || r.season === Season.ALL;
+            const matchesSeason = remedySeasonFilter === 'ALL' || (remedySeasonFilter === 'AUTO' ? (r.season === currentSeason || r.season === Season.ALL) : (r.season === remedySeasonFilter || r.season === Season.ALL));
+            const matchesQuery = !remedySearchQuery || r.title.toLowerCase().includes(remedySearchQuery.toLowerCase()) || r.ailment.toLowerCase().includes(remedySearchQuery.toLowerCase()) || r.ingredients.some(i => i.toLowerCase().includes(remedySearchQuery.toLowerCase()));
+            return matchesSeason && matchesQuery;
           }).map((remedy, index) => (
             <div
               key={remedy.id}
@@ -1528,7 +1718,11 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
     </div>
   );
 
-  const renderConsultation = () => (
+  const renderConsultation = () => {
+    const emergencyKeywords = /chest pain|seene me dard|chhati me dard|saans lene me takleef|breathless|shortness of breath|khoon|bleeding|unconscious|behosh|heart attack|seizure|daura|poison|fracture/i;
+    const isEmergencyMentioned = messages.some(m => m.role === 'user' && emergencyKeywords.test(m.text));
+
+    return (
     <div className="flex flex-col h-full bg-slate-50">
       <div className="bg-white border-b border-slate-200 p-3 flex items-center justify-between shrink-0 animate-in fade-in slide-in-from-top-4 duration-500">
         <button onClick={() => setCurrentView('HOME')} className="text-slate-500 hover:text-slate-800">
@@ -1537,22 +1731,43 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
         <div className="flex flex-col items-center">
           <div className="flex items-center gap-1.5">
             <Logo className="w-5 h-5" />
-            <span className="font-bold text-slate-800 text-sm">PraanSewa AI Assistant</span>
+            <span className="font-bold text-slate-800 text-sm">PraanSewa / Upchaar AI</span>
           </div>
           <span className="text-[10px] text-emerald-600 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Language Adaptive
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Multi-lingual AI Doctor Active
           </span>
         </div>
         <button
           onClick={() => analyzeAndTriage()}
           disabled={messages.length < 2 || isLoading}
-          className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-full hover:bg-emerald-700 disabled:opacity-50 transition"
+          className="text-xs bg-emerald-600 text-white px-3 py-1.5 rounded-full hover:bg-emerald-700 disabled:opacity-50 transition font-semibold shadow-sm"
         >
-          Finish
+          Finish & Triage
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-w-4xl w-full mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
+        {/* REAL-TIME EMERGENCY ALERT BANNER */}
+        {isEmergencyMentioned && (
+          <div className="bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white p-3.5 rounded-2xl shadow-xl border border-red-400 flex items-center justify-between gap-3 animate-pulse">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-300" />
+              </div>
+              <div>
+                <p className="font-black text-xs sm:text-sm">Critical Symptoms Detected / गंभीर लक्षण</p>
+                <p className="text-[10px] text-white/90">Immediate doctor consultation is advised.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => analyzeAndTriage()}
+              className="px-3.5 py-2 bg-white text-red-700 hover:bg-red-50 text-xs font-black rounded-xl shadow-md shrink-0 flex items-center gap-1.5 transition active:scale-95"
+            >
+              <Video size={14} /> Connect to Doctor
+            </button>
+          </div>
+        )}
+
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl p-3.5 text-sm shadow-sm whitespace-pre-line group relative ${
@@ -1602,7 +1817,7 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
           <div className="flex justify-start">
             <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2">
               <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
-              <span className="text-[10px] text-slate-400 font-medium">System Processing...</span>
+              <span className="text-[10px] text-slate-400 font-medium">Dr. Upchaar AI is analyzing symptoms...</span>
             </div>
           </div>
         )}
@@ -1621,126 +1836,148 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
       </div>
 
       <div className="p-3 sm:p-4 bg-white border-t border-slate-200 shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="max-w-4xl mx-auto w-full">
-        {currentView === 'CONSULT_VOICE' ? (
-          <div className="flex flex-col items-center gap-3 py-3">
-            {/* MULTILINGUAL LANGUAGE SELECTION PILLS */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full px-1 pb-1">
-              {[
-                { code: 'hi-IN', label: '🇮🇳 हिन्दी (Hindi)' },
-                { code: 'en-IN', label: '🇬🇧 English' },
-                { code: 'pa-IN', label: '🇮🇳 ਪੰਜਾਬੀ (Punjabi)' },
-                { code: 'gu-IN', label: '🇮🇳 ગુજરાતી (Gujarati)' },
-                { code: 'mr-IN', label: '🇮🇳 मराठी (Marathi)' },
-                { code: 'bn-IN', label: '🇮🇳 বাংলা (Bengali)' },
-                { code: 'ta-IN', label: '🇮🇳 தமிழ் (Tamil)' },
-                { code: 'te-IN', label: '🇮🇳 తెలుగు (Telugu)' },
-              ].map(lang => (
-                <button
-                  key={lang.code}
-                  onClick={() => {
-                    setSpeechInputLang(lang.code);
-                    if (recognitionRef.current) {
-                      try { recognitionRef.current.lang = lang.code; } catch (e) {}
-                    }
-                  }}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition active:scale-95 ${
-                    speechInputLang === lang.code
-                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
-                  }`}
-                >
-                  {lang.label}
-                </button>
-              ))}
-            </div>
+        <div className="max-w-4xl mx-auto w-full space-y-2">
 
-            {/* LIVE VOICE EQUALIZER / SPEAKING STATUS */}
-            {isVoiceSpeaking && (
-              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm animate-pulse">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
-                <span>AI Doctor Speaking (Human Neural Voice)...</span>
-                <button
-                  onClick={() => stopRealisticVoice()}
-                  className="ml-2 text-red-600 hover:text-red-800 bg-white px-2 py-0.5 rounded-md text-[10px] border border-red-200 font-bold"
-                >
-                  Stop
-                </button>
-              </div>
-            )}
-
-            <div className="flex items-center gap-4">
+          {/* MULTILINGUAL LANGUAGE SELECTION PILLS - AVAILABLE IN BOTH MODES */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full px-1 pb-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Language:</span>
+            {[
+              { code: 'hi-IN', label: '🇮🇳 हिन्दी' },
+              { code: 'en-IN', label: '🇬🇧 English' },
+              { code: 'pa-IN', label: '🇮🇳 ਪੰਜਾਬੀ' },
+              { code: 'gu-IN', label: '🇮🇳 ગુજરાતી' },
+              { code: 'mr-IN', label: '🇮🇳 मराठी' },
+              { code: 'bn-IN', label: '🇮🇳 বাংলা' },
+              { code: 'ta-IN', label: '🇮🇳 தமிழ்' },
+              { code: 'te-IN', label: '🇮🇳 తెలుగు' },
+            ].map(lang => (
               <button
-                onClick={isListening ? () => recognitionRef.current?.stop() : () => startListening()}
-                disabled={isLoading}
-                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                  isListening
-                    ? 'bg-red-500 shadow-xl shadow-red-500/50 scale-110 ring-4 ring-red-200 animate-pulse'
-                    : isVoiceSpeaking
-                    ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40 ring-4 ring-emerald-100'
-                    : 'bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:scale-105 active:scale-95'
-                } disabled:opacity-50 text-white`}
-              >
-                <Mic size={28} />
-              </button>
-            </div>
-            
-            <p className="text-xs text-slate-500 font-medium text-center">
-              {isListening
-                ? `🎙️ Listening in ${speechInputLang.split('-')[0].toUpperCase()}... (Speak freely)`
-                : isVoiceSpeaking
-                ? '🔊 Listening to AI Doctor voice...'
-                : isLoading
-                ? '⚡ Processing clinical advice...'
-                : 'Tap microphone to speak (Multi-lingual supported)'}
-            </p>
-          </div>
-        ) : (
-          <div className="flex gap-2 items-end">
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              ref={fileInputRef}
-              onChange={handleImageSelect}
-              disabled={isLoading}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              className="p-3 text-slate-400 hover:bg-slate-100 rounded-full transition disabled:opacity-30"
-            >
-              <ImageIcon size={20} />
-            </button>
-            <div className="flex-1 bg-slate-100 rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500">
-              <textarea
-                value={inputText}
-                disabled={isLoading}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend(inputText);
+                key={lang.code}
+                onClick={() => {
+                  setSpeechInputLang(lang.code);
+                  if (recognitionRef.current) {
+                    try { recognitionRef.current.lang = lang.code; } catch (e) {}
+                  }
+                  if (dictationRef.current) {
+                    try { dictationRef.current.lang = lang.code; } catch (e) {}
                   }
                 }}
-                placeholder="Describe symptoms here..."
-                className="w-full bg-transparent border-0 focus:ring-0 text-sm resize-none max-h-20"
-                rows={1}
-              />
-            </div>
-            <button
-              onClick={() => handleSend(inputText)}
-              disabled={!inputText.trim() || isLoading}
-              className="p-3 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition disabled:opacity-50"
-            >
-              <Send size={20} />
-            </button>
+                className={`px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition active:scale-95 ${
+                  speechInputLang === lang.code
+                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
+                }`}
+              >
+                {lang.label}
+              </button>
+            ))}
           </div>
-        )}
+
+          {currentView === 'CONSULT_VOICE' ? (
+            <div className="flex flex-col items-center gap-3 py-3">
+              {/* LIVE VOICE EQUALIZER / SPEAKING STATUS */}
+              {isVoiceSpeaking && (
+                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm animate-pulse">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                  <span>AI Doctor Speaking (Human Neural Voice)...</span>
+                  <button
+                    onClick={() => stopRealisticVoice()}
+                    className="ml-2 text-red-600 hover:text-red-800 bg-white px-2 py-0.5 rounded-md text-[10px] border border-red-200 font-bold"
+                  >
+                    Stop
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={isListening ? () => recognitionRef.current?.stop() : () => startListening()}
+                  disabled={isLoading}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
+                    isListening
+                      ? 'bg-red-500 shadow-xl shadow-red-500/50 scale-110 ring-4 ring-red-200 animate-pulse'
+                      : isVoiceSpeaking
+                      ? 'bg-emerald-500 shadow-lg shadow-emerald-500/40 ring-4 ring-emerald-100'
+                      : 'bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:scale-105 active:scale-95'
+                  } disabled:opacity-50 text-white`}
+                >
+                  <Mic size={28} />
+                </button>
+              </div>
+              
+              <p className="text-xs text-slate-500 font-medium text-center">
+                {isListening
+                  ? `🎙️ Listening in ${speechInputLang.split('-')[0].toUpperCase()}... (Speak freely)`
+                  : isVoiceSpeaking
+                  ? '🔊 Listening to AI Doctor voice...'
+                  : isLoading
+                  ? '⚡ Processing clinical advice...'
+                  : 'Tap microphone to speak (Multi-lingual supported)'}
+              </p>
+            </div>
+          ) : (
+            <div className="flex gap-2 items-end">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleImageSelect}
+                disabled={isLoading}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                className="p-3 text-slate-400 hover:bg-slate-100 rounded-full transition disabled:opacity-30"
+                title="Attach photo/report"
+              >
+                <ImageIcon size={20} />
+              </button>
+
+              {/* SPEECH DICTATION BUTTON IN TEXT CHAT */}
+              <button
+                onClick={toggleTextDictation}
+                disabled={isLoading}
+                className={`p-3 rounded-full transition ${
+                  isDictatingText
+                    ? 'bg-red-500 text-white animate-pulse shadow-md shadow-red-500/40 ring-4 ring-red-200'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-emerald-700'
+                }`}
+                title={isDictatingText ? 'Listening... click to stop' : `Speak to type (${speechInputLang.split('-')[0].toUpperCase()})`}
+              >
+                <Mic size={20} />
+              </button>
+
+              <div className="flex-1 bg-slate-100 rounded-2xl px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500">
+                <textarea
+                  value={inputText}
+                  disabled={isLoading}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend(inputText);
+                    }
+                  }}
+                  placeholder={isDictatingText ? `Listening in ${speechInputLang.split('-')[0].toUpperCase()}... speak now` : "Describe symptoms here (बोलें या लिखें)..."}
+                  className="w-full bg-transparent border-0 focus:ring-0 text-sm resize-none max-h-20"
+                  rows={1}
+                />
+              </div>
+              <button
+                onClick={() => handleSend(inputText)}
+                disabled={!inputText.trim() || isLoading}
+                className="p-3 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition disabled:opacity-50"
+              >
+                <Send size={20} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderTriageResult = () => {
     if (!triageResult) return null;
@@ -1748,80 +1985,147 @@ const PatientPortal: React.FC<PatientPortalProps> = ({ user, patientHistory = []
 
     return (
       <div className="flex flex-col h-full bg-slate-50 overflow-y-auto animate-in slide-in-from-bottom-8 duration-700">
-        <div className="p-4 sm:p-6 lg:p-8 max-w-2xl w-full mx-auto">
-          <div className={`p-6 rounded-2xl shadow-sm border mb-6 text-center ${isSerious ? 'bg-red-50 border-red-200' : 'bg-emerald-50 border-emerald-200'
+        <div className="p-4 sm:p-6 lg:p-8 max-w-2xl w-full mx-auto space-y-6">
+          
+          {/* TRIAGE HEADER CARD */}
+          <div className={`p-6 rounded-3xl shadow-sm border text-center relative overflow-hidden ${
+            isSerious ? 'bg-gradient-to-br from-red-50 to-rose-100 border-red-200' : 'bg-gradient-to-br from-emerald-50 to-teal-100 border-emerald-200'
+          }`}>
+            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm ${
+              isSerious ? 'bg-red-500 text-white animate-pulse' : 'bg-emerald-600 text-white'
             }`}>
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isSerious ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'
-              }`}>
-              <Activity size={32} />
+              {isSerious ? <AlertTriangle size={32} /> : <Activity size={32} />}
             </div>
-            <h2 className={`text-xl font-bold mb-2 ${isSerious ? 'text-red-800' : 'text-emerald-800'}`}>
-              {isSerious ? 'Doctor Consultation Recommended' : 'Mild Condition Detected'}
-            </h2>
-            <p className="text-slate-600 text-sm">
-              {triageResult.diagnosis}
-            </p>
-            <div className="mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            
+            <div className="inline-block px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider mb-2 border shadow-2xs ${
+              isSerious ? 'bg-red-600 text-white border-red-700' : 'bg-emerald-600 text-white border-emerald-700'
+            }">
               Severity Level: {triageResult.severity}
             </div>
+
+            <h2 className={`text-xl sm:text-2xl font-black mb-2 tracking-tight ${isSerious ? 'text-red-950' : 'text-emerald-950'}`}>
+              {isSerious ? '🚨 Immediate Doctor Consultation Recommended' : '✅ Mild Condition Detected'}
+            </h2>
+            <p className="text-slate-700 text-sm max-w-md mx-auto leading-relaxed font-medium">
+              {triageResult.diagnosis}
+            </p>
+
+            {triageResult.summary && (
+              <p className="text-xs text-slate-500 mt-2 max-w-md mx-auto italic">
+                "{triageResult.summary}"
+              </p>
+            )}
           </div>
 
-          {!isSerious && triageResult.homeRemedies && triageResult.homeRemedies.length > 0 && (
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 mb-6">
-              <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">🌿 Home Remedies</h3>
-              <ul className="space-y-2">
+          {/* DOCTOR ESCALATION PRIORITY CARD (IF SERIOUS) */}
+          {isSerious && (
+            <div className="bg-white rounded-3xl p-6 shadow-md border-2 border-red-300 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-red-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center font-bold shrink-0">
+                    <Video size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-slate-900 text-base">Connect with On-Duty Doctor</h3>
+                    <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                      <span>Dr. A. Sharma (MD, General Physician) is Online</span>
+                    </p>
+                  </div>
+                </div>
+                <span className="hidden sm:inline-block px-2.5 py-1 bg-red-50 text-red-700 border border-red-200 text-[10px] font-black rounded-full uppercase">
+                  Zero Waiting
+                </span>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Your consultation transcript, reported symptoms, and vitals have been summarized for the doctor. Choose how you would like to connect:
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <button
+                  onClick={() => handleFinalSubmit(true, 'VIDEO')}
+                  className="py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2.5 transition active:scale-95"
+                >
+                  <Video size={18} />
+                  <span>Start Video Call</span>
+                </button>
+                <button
+                  onClick={() => handleFinalSubmit(true, 'VOICE')}
+                  className="py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2.5 transition active:scale-95"
+                >
+                  <Phone size={18} />
+                  <span>Direct Voice Call</span>
+                </button>
+              </div>
+
+              <div className="pt-2 text-center">
+                <button
+                  onClick={() => setCurrentView('BOOK_APPOINTMENT')}
+                  className="text-xs text-slate-500 hover:text-slate-800 font-bold underline transition"
+                >
+                  Or schedule an in-person clinic appointment →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* HOME REMEDIES SECTION */}
+          {triageResult.homeRemedies && triageResult.homeRemedies.length > 0 && (
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-extrabold text-slate-900 flex items-center gap-2 text-sm sm:text-base">
+                  <span>🌿 {isSerious ? 'Supportive Home Care (Alongside Doctor Care)' : 'Prescribed Herbal Home Remedies'}</span>
+                </h3>
+                <button
+                  onClick={() => setCurrentView('HOME_REMEDIES')}
+                  className="text-xs text-amber-700 hover:underline font-bold"
+                >
+                  Explore All →
+                </button>
+              </div>
+
+              <ul className="space-y-2.5 pt-1">
                 {triageResult.homeRemedies.map((remedy, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                    <span className="mt-1.5 w-1.5 h-1.5 bg-emerald-400 rounded-full shrink-0"></span>
-                    {remedy}
+                  <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
+                    <span className="mt-1 w-2 h-2 bg-amber-500 rounded-full shrink-0"></span>
+                    <span className="leading-relaxed">{remedy}</span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
 
-          <div className="space-y-3">
-            {isSerious ? (
-              <>
-                <button
-                  onClick={() => handleFinalSubmit(true, 'VIDEO')}
-                  className="w-full py-4 bg-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-3 hover:bg-emerald-700 transition"
-                >
-                  <Video size={20} /> Connect to Doctor (Video)
-                </button>
-                <button
-                  onClick={() => handleFinalSubmit(true, 'VOICE')}
-                  className="w-full py-4 bg-blue-600 text-white rounded-xl font-semibold shadow-lg shadow-blue-600/20 flex items-center justify-center gap-3 hover:bg-blue-700 transition"
-                >
-                  <Phone size={20} /> Voice Call Doctor
-                </button>
-                <button
-                  onClick={() => setCurrentView('BOOK_APPOINTMENT')}
-                  className="w-full py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 transition"
-                >
-                  <Calendar size={20} /> Book Appointment
-                </button>
-              </>
-            ) : (
-              <>
+          {/* PRESCRIPTION / CARE SUGGESTIONS IF MILD */}
+          {!isSerious && triageResult.careSuggestions && (
+            <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 text-xs text-slate-700 space-y-1.5">
+              <p className="font-bold text-slate-900">💡 Care & Hygiene Suggestions:</p>
+              <p className="leading-relaxed text-slate-600">{triageResult.careSuggestions}</p>
+            </div>
+          )}
+
+          {/* ACTION BUTTONS */}
+          <div className="space-y-3 pt-2">
+            {!isSerious && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   onClick={() => handleFinalSubmit(true)}
-                  className="w-full py-4 bg-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-3 hover:bg-emerald-700 transition"
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2.5 transition active:scale-95 text-sm"
                 >
-                  <Truck size={20} /> Request Medicine Delivery
+                  <Truck size={18} /> Request Medicine Delivery
                 </button>
                 <button
                   onClick={() => handleFinalSubmit(false)}
-                  className="w-full py-4 bg-white text-slate-600 border border-slate-200 rounded-xl font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 transition"
+                  className="w-full py-4 bg-white text-slate-700 hover:bg-amber-50 hover:text-amber-800 border border-slate-200 rounded-2xl font-bold flex items-center justify-center gap-2 transition text-sm"
                 >
-                  I'll use Home Remedies
+                  🌿 I'll use Home Remedies
                 </button>
-              </>
+              </div>
             )}
-            {/* Back to Home Button triggers Feedback flow as per objective */}
+
             <button
               onClick={() => setCurrentView('FEEDBACK')}
-              className="w-full py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 transition"
+              className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold flex items-center justify-center gap-2 transition text-xs"
             >
               Back to Home
             </button>

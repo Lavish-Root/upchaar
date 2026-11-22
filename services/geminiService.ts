@@ -8,6 +8,7 @@ import {
   analyzeUniversalCase,
   generateUniversalHealthRisks,
   trainUniversalAiModel,
+  generateCustomHomeRemedy,
   TriageResult,
   UniversalChatSession
 } from './aiService';
@@ -15,7 +16,7 @@ import { getLiveNearbyHospitals, searchIndianLocation, reverseGeocodeLocality } 
 import { PatientProfile, RiskPrediction, ModelHistoryEntry, Hospital } from '../types';
 
 export type { TriageResult };
-export { searchIndianLocation, reverseGeocodeLocality };
+export { searchIndianLocation, reverseGeocodeLocality, generateCustomHomeRemedy };
 
 export const startNewChat = (): UniversalChatSession => {
   return startUniversalChat();

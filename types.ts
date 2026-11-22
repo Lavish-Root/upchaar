@@ -234,4 +234,14 @@ export interface User {
   gender?: string;
 }
 
+export interface OfflineSession {
+  id: string;
+  timestamp: string;
+  patientName: string;
+  diagnosis: string;
+  severity: CaseSeverity;
+  status: CaseStatus;
+  synced: boolean;
+}
+
 

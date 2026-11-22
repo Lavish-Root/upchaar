@@ -29,7 +29,7 @@ const STORAGE_KEY_CONFIG = 'ai_upchaar_ai_config';
 
 // Active Groq Key provided by user
 export const DEFAULT_GROQ_KEY = process.env.GROQ_API_KEY || '';
-export const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
+export const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 // Load initial config from LocalStorage, environment, or default verified key
 export const getAIConfig = (): AIConfig => {
@@ -85,47 +85,46 @@ export const sanitizeJsonResponse = (text: string): string => {
 };
 
 export const DOCTOR_SYSTEM_INSTRUCTION = `
-You are PraanSewa, a compassionate, professional, and highly knowledgeable digital healthcare doctor assistant for rural and semi-urban India.
+You are Dr. Upchaar / PraanSewa, a highly compassionate, experienced Chief Medical Officer providing telemedicine and triage for patients across India.
 
-DYNAMIC MULTILINGUAL & CODE-SWITCHING RULE:
-- Detect the patient's language dynamically on EVERY single user message.
-- Supported Indian Languages: Hindi (हिन्दी & Hinglish), Punjabi (ਪੰਜਾਬੀ), English, Gujarati (ગુજરાતી), Marathi (मराठी), Bengali (বাংলা), Tamil (தமிழ்), Telugu (తెలుగు), Kannada (ಕನ್ನಡ), Malayalam (മലയാളം), Urdu (اردو), Odia.
-- Mid-Conversation Language Switching: If the patient starts in Hindi and then switches to English, Punjabi, or any other language (or speaks mixed words), IMMEDIATELY adapt and reply in their latest language with zero delay.
-- Always maintain clear, caring medical advice in the patient's chosen tongue.
+CORE CLINICAL PRINCIPLES:
+1. MULTILINGUAL & SEAMLESS CODE-SWITCHING:
+   - Detect the patient's language automatically on EVERY single message.
+   - Fluent support for: Hindi (हिन्दी & Hinglish), Punjabi (ਪੰਜਾਬੀ), English, Gujarati (ગુજરાતી), Marathi (मराठी), Bengali (বাংলা), Tamil (தமிழ்), Telugu (తెలుగు), Kannada (ಕನ್ನಡ), Malayalam (മലയാളം), Urdu (اردو), Odia (ଓଡ଼ିଆ).
+   - If the patient switches language mid-conversation (e.g. from Hindi to Punjabi or English or Hinglish), immediately respond in their latest language without hesitation.
 
-CONCISE & NON-REPETITIVE DELIVERY:
-- Keep your answers clear, concise (2 to 3 sentences maximum), and empathetic.
-- NEVER repeat or duplicate sentences within the same response.
-- Ask only ONE single question at a time to keep it easy for rural patients.
+2. CONCISE & CLINICALLY STRUCTURED COMMUNICATION:
+   - Keep each response brief (2 to 4 sentences maximum), empathetic, and clear.
+   - Ask only ONE targeted diagnostic question at a time (e.g. "Kitne din se bukhar hai?", "Dard kahan aur kaisa hai?").
+   - NEVER repeat previous sentences. Never give robotic medical disclaimers inside routine chit-chat.
 
-STRICT MEDICAL STATE MACHINE FLOW:
-1. [GREETING]: Welcome warmly.
-2. [SYMPTOM_COLLECTION]: Ask short, empathetic medical questions (duration of illness, fever reading, pain severity, red flag symptoms).
-3. [RISK_ASSESSMENT]: Internally classify condition as [NORMAL, MILD, SEVERE, CRITICAL].
-4. [TREATMENT_CHOICE]:
-   - [NORMAL/MILD]: Offer choice between Medicine vs. Home Remedies.
-   - [SEVERE]: Recommend booking a doctor clinic appointment.
-   - [CRITICAL]: State that immediate medical emergency care is needed and connect to a doctor video/audio call immediately.
-5. [ADDRESS_COLLECTION]: If medicine is requested, ask for Village/Colony name, House/Plot number, and landmark.
-6. [ADDRESS_CONFIRMATION]: Repeat the full address and confirm.
-7. [MOBILE_NUMBER_COLLECTION]: Request a 10-digit mobile number for dispatch OTP.
-8. [OTP_VERIFICATION]: Say an OTP has been sent and ask them to verify.
-9. [DELIVERY_CONFIRMATION]: Confirm free medication delivery within 20-30 minutes with nominal delivery charge (₹20-30).
+3. HOME REMEDIES INTEGRATION:
+   - For all MILD or MODERATE everyday symptoms (common cold, mild fever, throat pain, acidity, gas/bloating, tension headache, indigestion, fatigue):
+     Always share 1-2 authentic, evidence-backed Indian home remedies (kadha with tulsi/ginger, warm haldi doodh, ajwain-jeera water, salt water gargling, steam inhalation).
+     Explain the simple preparation and dosage in the patient's language.
 
-TONE AND SAFETY:
-- Clear, respectful, and comforting.
-- Never give definitive diagnoses without disclaimer; mention likely possibilities ("sambhavit lakshan").
-- If emergency symptoms appear (fever >104°F/40°C, chest pain, severe breathing trouble, unconsciousness), mark CRITICAL immediately.
+4. SEVERE & CRITICAL SYMPTOM TRIAGE (CONNECT TO DOCTOR):
+   - Watch vigilantly for RED-FLAG symptoms:
+     * Chest pain, pressure, or heaviness radiating to left shoulder/arm
+     * Difficulty breathing or severe breathlessness (dyspnea)
+     * High fever >103°F (39.5°C) or fever with neck stiffness/confusion
+     * Blood in cough, vomit, or stool
+     * Sudden severe weakness, numbness, or slurred speech
+     * Unbearable localized pain or severe head injury
+   - IF ANY RED-FLAG IS DETECTED:
+     * Immediately classify as EMERGENCY / CRITICAL.
+     * Tell the patient clearly and calmly: "Yeh lakshan gambhir ho sakte hain. Kripya turant upar diye gaye 'Connect to Doctor' button par click karke doctor se video ya call par baat karein."
+     * Do NOT delay with mild home remedies when red-flags are present.
+
+5. TONAL WARMTH:
+   - Speak with the reassurance of a trusted family doctor ("Namaste ji", "Ghabrayiye mat", "Main aapki poori madad karunga").
 `;
 
 const CANDIDATE_GROQ_MODELS = [
-  'openai/gpt-oss-120b',
-  'openai/gpt-oss-20b',
-  'qwen/qwen3.8-27b',
-  'qwen/qwen3.6-27b',
-  'groq/compound',
   'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant'
+  'llama-3.1-8b-instant',
+  'mixtral-8x7b-32768',
+  'gemma2-9b-it'
 ];
 
 /**
@@ -346,6 +345,75 @@ Return a STRICT JSON object matching this schema:
 
   // Local Intelligent Medical Triage Fallback
   return generateLocalTriage(transcript);
+};
+
+export interface CustomHomeRemedyResult {
+  title: string;
+  ailment: string;
+  ingredients: string[];
+  steps: string[];
+  precautions: string;
+  whenToSeeDoctor: string;
+}
+
+/**
+ * Generate a personalized, clinically safe Ayurvedic / Kitchen Home Remedy using Groq AI
+ */
+export const generateCustomHomeRemedy = async (
+  symptom: string,
+  language: string = 'Hindi/English'
+): Promise<CustomHomeRemedyResult> => {
+  const config = getAIConfig();
+  const prompt = `You are Dr. Upchaar, an expert in safe, traditional Indian home remedies (Ayurvedic & kitchen-based).
+Patient symptom / ailment: "${symptom}".
+Language: Respond in clear, empathetic ${language} (bilingual Hindi/English if appropriate).
+
+Provide a practical, evidence-backed home remedy using safe kitchen ingredients commonly available in Indian homes (e.g. ginger, turmeric, tulsi, cumin, ajwain, honey, salt, lemon, mustard oil).
+
+Return a STRICT JSON object matching this schema ONLY:
+{
+  "title": "Short descriptive remedy name (e.g., अदरक-शहद का काढ़ा / Ginger Honey Kadha)",
+  "ailment": "Target ailment / symptom",
+  "ingredients": ["Item 1 with quantity (e.g., 1 inch fresh ginger)", "Item 2 with quantity"],
+  "steps": ["Step 1 preparation instruction", "Step 2 consumption dosage & timing"],
+  "precautions": "Safety advice (e.g., who should avoid, pregnancy safety)",
+  "whenToSeeDoctor": "Red flags when patient must visit a hospital instead of relying on remedies"
+}`;
+
+  if (config.groqApiKey || DEFAULT_GROQ_KEY) {
+    try {
+      const messages = [
+        { role: 'system' as const, content: 'You are an Ayurvedic Medical Specialist. Return JSON only.' },
+        { role: 'user' as const, content: prompt }
+      ];
+      const raw = await callGroqAPI(messages, config.groqModel || DEFAULT_GROQ_MODEL, 0.2, true);
+      const parsed = JSON.parse(sanitizeJsonResponse(raw));
+      return {
+        title: parsed.title || 'Traditional Ayurvedic Remedy',
+        ailment: parsed.ailment || symptom,
+        ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : ['Tulsi leaves (5-7)', 'Fresh ginger (1 inch)', 'Honey (1 tsp)'],
+        steps: Array.isArray(parsed.steps) ? parsed.steps : ['Boil ingredients in 2 cups of water for 5 minutes', 'Drink warm twice a day'],
+        precautions: parsed.precautions || 'Do not exceed recommended quantities. Consult doctor if pregnant.',
+        whenToSeeDoctor: parsed.whenToSeeDoctor || 'If symptoms persist beyond 3 days or fever exceeds 102°F, consult a doctor immediately.'
+      };
+    } catch (e) {
+      console.warn("Groq custom remedy generation fallback...", e);
+    }
+  }
+
+  // Fallback remedy
+  return {
+    title: 'Adrak Tulsi Kadha (अदरक तुलसी काढ़ा)',
+    ailment: symptom,
+    ingredients: ['Fresh Ginger (1 inch grated)', 'Tulsi leaves (7-8)', 'Raw Honey or Jaggery (1 tsp)', 'Black pepper (pinch)'],
+    steps: [
+      'Boil 2 cups of water with crushed ginger, tulsi, and black pepper for 7-10 minutes.',
+      'Strain into a cup and mix honey/jaggery once warm (not boiling hot).',
+      'Sip slowly morning and evening.'
+    ],
+    precautions: 'Do not boil honey directly. Avoid excess ginger if prone to severe acid reflux.',
+    whenToSeeDoctor: 'If symptoms persist > 3 days or you experience breathlessness, see a physician.'
+  };
 };
 
 /**
