@@ -22,7 +22,7 @@ export const config = {
     openaiApiKey: process.env.OPENAI_API_KEY || '',
     openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
     groqApiKey: process.env.GROQ_API_KEY || '',
-    groqModel: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+    groqModel: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
   },
 
   voice: {
