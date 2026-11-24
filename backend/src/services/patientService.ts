@@ -91,6 +91,9 @@ export class PatientService {
       });
 
       return updated;
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
   }
 

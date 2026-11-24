@@ -359,6 +359,9 @@ export class DoctorService {
         where: { doctorId },
         orderBy: { dayOfWeek: 'asc' },
       });
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
   }
 
@@ -461,6 +464,9 @@ export class DoctorService {
       });
 
       return updatedDoc;
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
   }
 }

@@ -65,6 +65,9 @@ export class AuthService {
       }
 
       return { ...newUser, patient: newPatient };
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
 
     const accessToken = generateAccessToken({
@@ -256,6 +259,9 @@ export class AuthService {
       }
 
       return { ...newUser, doctor: newDoctor };
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
 
     const accessToken = generateAccessToken({

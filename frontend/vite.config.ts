@@ -14,16 +14,22 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         ws: true,
+        changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, _res) => {
+            // Silently handle proxy reconnection attempts when backend is restarting or offline
+          });
+        },
       },
     },
   },

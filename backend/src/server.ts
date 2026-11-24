@@ -94,7 +94,7 @@ setupConsultationSockets(io);
 async function startServer() {
   await checkDatabaseConnection();
 
-  server.listen(config.port, () => {
+  server.listen(config.port, '0.0.0.0', () => {
     console.log(`🚀 PraanSewa Server running on http://localhost:${config.port}`);
     console.log(`🩺 API Base: http://localhost:${config.port}/api/v1`);
     console.log(`🔌 Socket.IO Consultation Rooms active`);

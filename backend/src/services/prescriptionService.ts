@@ -167,6 +167,9 @@ export class PrescriptionService {
       }
 
       return prescription;
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
   }
 
@@ -235,6 +238,9 @@ export class PrescriptionService {
       });
 
       return prescription;
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
   }
 

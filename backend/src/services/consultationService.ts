@@ -61,23 +61,29 @@ export class ConsultationService {
       throw new Error('Only the assigned consulting physician can mark this consultation as completed.');
     }
 
-    return prisma.$transaction(async (tx) => {
-      const updatedConsultation = await tx.consultation.update({
-        where: { id },
-        data: {
-          status: ConsultationStatus.COMPLETED,
-          endedAt: new Date(),
-          doctorNotes: doctorNotes || consultation.doctorNotes,
-        },
-      });
+    return prisma.$transaction(
+      async (tx) => {
+        const updatedConsultation = await tx.consultation.update({
+          where: { id },
+          data: {
+            status: ConsultationStatus.COMPLETED,
+            endedAt: new Date(),
+            doctorNotes: doctorNotes || consultation.doctorNotes,
+          },
+        });
 
-      await tx.appointment.update({
-        where: { id: consultation.appointmentId },
-        data: { status: 'COMPLETED' },
-      });
+        await tx.appointment.update({
+          where: { id: consultation.appointmentId },
+          data: { status: 'COMPLETED' },
+        });
 
-      return updatedConsultation;
-    });
+        return updatedConsultation;
+      },
+      {
+        maxWait: 10000,
+        timeout: 25000,
+      }
+    );
   }
 }
 
