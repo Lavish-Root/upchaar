@@ -39,43 +39,88 @@ export const EmergencyCallModal: React.FC<EmergencyCallModalProps> = ({ isOpen, 
   const [callingState, setCallingState] = useState<'IDLE' | 'CALLING' | 'CONNECTED'>('IDLE');
   const [activeCallId, setActiveCallId] = useState<string>('');
   const [connectedDoctorName, setConnectedDoctorName] = useState<string>('');
+  const [onDutyDoctorsCount, setOnDutyDoctorsCount] = useState<number | null>(null);
+  const [callNotice, setCallNotice] = useState<string>('');
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const ringIntervalRef = useRef<any>(null);
+  const activeCallIdRef = useRef<string>('');
+  const callingStateRef = useRef<'IDLE' | 'CALLING' | 'CONNECTED'>('IDLE');
+
+  activeCallIdRef.current = activeCallId;
+  callingStateRef.current = callingState;
 
   useEffect(() => {
     if (user?.phone && !patientPhone) {
       setPatientPhone(user.phone);
     }
-  }, [user]);
+  }, [user, patientPhone]);
 
-  // Listen for emergency call accepted from Doctor
+  // Reset modal state cleanly when closed
   useEffect(() => {
-    if (!socket) return;
+    if (!isOpen) {
+      stopRingAudio();
+      setCallingState('IDLE');
+      setActiveCallId('');
+      setConnectedDoctorName('');
+      setOnDutyDoctorsCount(null);
+      setCallNotice('');
+    }
+  }, [isOpen]);
 
-    socket.on('emergency_call_connected', (data: {
+  // Listen for emergency call lifecycle events ONLY while modal is open
+  useEffect(() => {
+    if (!socket || !isOpen) return;
+
+    const handleConnected = (data: {
       callId: string;
       doctorId: string;
       doctorName: string;
       meetingRoomId: string;
     }) => {
+      if (activeCallIdRef.current && data.callId !== activeCallIdRef.current) return;
+      if (callingStateRef.current === 'CONNECTED') return;
+
       console.log('🎉 Emergency call connected with doctor:', data.doctorName);
       stopRingAudio();
       setConnectedDoctorName(data.doctorName);
       setCallingState('CONNECTED');
-    });
+    };
 
-    socket.on('emergency_call_cancelled', () => {
+    const handleStatus = (data: { callId: string; status: string; onDutyDoctorsCount: number }) => {
+      if (data.callId === activeCallIdRef.current) {
+        setOnDutyDoctorsCount(data.onDutyDoctorsCount);
+      }
+    };
+
+    const handleCancelled = (data?: { callId?: string }) => {
+      if (data?.callId && activeCallIdRef.current && data.callId !== activeCallIdRef.current) return;
       stopRingAudio();
-      alert('The emergency call was declined or cancelled by the medical team. Please contact 112 / 102 immediately.');
+      setCallNotice('The emergency call was declined or cancelled. Please call 112 / 102 immediately for critical help.');
       setCallingState('IDLE');
-    });
+      setActiveCallId('');
+    };
+
+    const handleEnded = (data?: { callId?: string }) => {
+      if (data?.callId && activeCallIdRef.current && data.callId !== activeCallIdRef.current) return;
+      stopRingAudio();
+      setCallingState('IDLE');
+      setActiveCallId('');
+      onClose();
+    };
+
+    socket.on('emergency_call_connected', handleConnected);
+    socket.on('emergency_call_status', handleStatus);
+    socket.on('emergency_call_cancelled', handleCancelled);
+    socket.on('emergency_call_ended', handleEnded);
 
     return () => {
-      socket.off('emergency_call_connected');
-      socket.off('emergency_call_cancelled');
+      socket.off('emergency_call_connected', handleConnected);
+      socket.off('emergency_call_status', handleStatus);
+      socket.off('emergency_call_cancelled', handleCancelled);
+      socket.off('emergency_call_ended', handleEnded);
     };
-  }, [socket]);
+  }, [socket, isOpen, onClose]);
 
   // Audio Ring Generator using Web Audio API
   const playRingAudio = () => {
@@ -122,18 +167,36 @@ export const EmergencyCallModal: React.FC<EmergencyCallModalProps> = ({ isOpen, 
 
   const handleStartEmergencyCall = () => {
     if (!user) return;
+    setCallNotice('');
+
+    if (!socket) {
+      setCallNotice('Unable to initialize real-time call socket. Please refresh the page or call 112 directly.');
+      return;
+    }
+
     const callId = `emg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    activeCallIdRef.current = callId;
     setActiveCallId(callId);
+    setOnDutyDoctorsCount(null);
     setCallingState('CALLING');
     playRingAudio();
 
-    if (socket) {
-      socket.emit('initiate_emergency_call', {
-        callId,
-        patientId: user.id,
-        patientName: user.fullName,
-        patientPhone: patientPhone || user.phone || 'Emergency Helpline',
-        emergencyReason,
+    const payload = {
+      callId,
+      patientId: user.id,
+      patientName: user.fullName,
+      patientPhone: patientPhone || user.phone || 'Emergency Helpline',
+      emergencyReason,
+    };
+
+    if (socket.connected) {
+      socket.emit('initiate_emergency_call', payload);
+    } else {
+      socket.connect();
+      socket.once('connect', () => {
+        if (callingStateRef.current === 'CALLING' && activeCallIdRef.current === callId) {
+          socket.emit('initiate_emergency_call', payload);
+        }
       });
     }
   };
@@ -141,12 +204,17 @@ export const EmergencyCallModal: React.FC<EmergencyCallModalProps> = ({ isOpen, 
   const handleCancelCall = () => {
     stopRingAudio();
     if (socket && activeCallId && user) {
-      socket.emit('cancel_emergency_call', {
-        callId: activeCallId,
-        patientId: user.id,
-      });
+      if (callingState === 'CONNECTED') {
+        socket.emit('end_emergency_call', { callId: activeCallId });
+      } else {
+        socket.emit('cancel_emergency_call', {
+          callId: activeCallId,
+          patientId: user.id,
+        });
+      }
     }
     setCallingState('IDLE');
+    setActiveCallId('');
     onClose();
   };
 
@@ -208,6 +276,13 @@ export const EmergencyCallModal: React.FC<EmergencyCallModalProps> = ({ isOpen, 
                   This connects you directly via instant video call to on-duty Government Medical Officers at central district hospitals and AIIMS. Consultations are completely free of charge.
                 </div>
               </div>
+
+              {callNotice && (
+                <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3 text-amber-900 text-xs font-medium flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>{callNotice}</span>
+                </div>
+              )}
 
               {/* Emergency Symptom Selection */}
               <div className="space-y-2">
@@ -278,6 +353,24 @@ export const EmergencyCallModal: React.FC<EmergencyCallModalProps> = ({ isOpen, 
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 text-rose-700 text-xs font-semibold mt-2 border border-rose-200">
                   <span className="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
                   Reason: {emergencyReason}
+                </div>
+
+                {/* Live Server & Doctor Paging Status */}
+                <div className="mt-3 max-w-sm mx-auto">
+                  {!isConnected ? (
+                    <div className="text-[11px] bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-3 py-2 font-medium">
+                      Connecting to emergency server... Please wait.
+                    </div>
+                  ) : onDutyDoctorsCount !== null && onDutyDoctorsCount > 0 ? (
+                    <div className="text-[11px] bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-3 py-2 font-semibold flex items-center justify-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>SOS Alert Active • {onDutyDoctorsCount} On-Duty Doctor{onDutyDoctorsCount > 1 ? 's' : ''} Ringing</span>
+                    </div>
+                  ) : (
+                    <div className="text-[11px] bg-amber-50 border border-amber-200 text-amber-900 rounded-xl px-3 py-2 leading-relaxed">
+                      <strong>Alert Queued (0 Doctors Currently Online):</strong> Keep this screen open and ask an on-duty doctor to open the Doctor Portal (or open Doctor Portal in another tab/window to accept), or dial <strong>112 / 102</strong> immediately.
+                    </div>
+                  )}
                 </div>
               </div>
 

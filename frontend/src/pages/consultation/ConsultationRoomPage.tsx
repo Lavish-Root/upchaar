@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import { useWebRTC, WebRTCEventConfig } from '../../hooks/useWebRTC';
 import { Consultation, ConsultationMessage } from '../../types';
 import {
   Video,
@@ -24,6 +25,15 @@ import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
+const CONSULTATION_WEBRTC_EVENTS: WebRTCEventConfig = {
+  idKey: 'consultationId',
+  readyEvent: 'video_peer_ready',
+  peerReadyEvent: 'video_peer_ready',
+  offerEvent: 'signal_offer',
+  answerEvent: 'signal_answer',
+  iceEvent: 'signal_ice_candidate',
+};
+
 export const ConsultationRoomPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -38,106 +48,33 @@ export const ConsultationRoomPage: React.FC = () => {
   const [savingNotes, setSavingNotes] = useState(false);
   const [completing, setCompleting] = useState(false);
 
-  // Real Video & Audio Media Streams
-  const [videoActive, setVideoActive] = useState(true);
-  const [micActive, setMicActive] = useState(true);
-  const [screenSharing, setScreenSharing] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const screenStreamRef = useRef<MediaStream | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize webcam & microphone
-  useEffect(() => {
-    let isMounted = true;
-    async function initMedia() {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: true,
-          });
-
-          if (isMounted) {
-            localStreamRef.current = stream;
-            setHasCameraPermission(true);
-            if (localVideoRef.current) {
-              localVideoRef.current.srcObject = stream;
-            }
-            if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
-              remoteVideoRef.current.srcObject = stream;
-            }
-          }
-        } else {
-          setHasCameraPermission(false);
-        }
-      } catch (err) {
-        console.warn('Webcam/mic access not granted:', err);
-        if (isMounted) setHasCameraPermission(false);
-      }
-    }
-
-    initMedia();
-
-    return () => {
-      isMounted = false;
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, []);
-
-  const toggleMic = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = !micActive));
-    }
-    setMicActive(!micActive);
-  };
-
-  const toggleVideo = () => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getVideoTracks().forEach((t) => (t.enabled = !videoActive));
-    }
-    setVideoActive(!videoActive);
-  };
-
-  const toggleScreenShare = async () => {
-    if (screenSharing) {
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((t) => t.stop());
-        screenStreamRef.current = null;
-      }
-      if (remoteVideoRef.current && localStreamRef.current) {
-        remoteVideoRef.current.srcObject = localStreamRef.current;
-      }
-      setScreenSharing(false);
-    } else {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-          const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-          screenStreamRef.current = screenStream;
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = screenStream;
-          }
-          screenStream.getVideoTracks()[0].onended = () => {
-            setScreenSharing(false);
-            if (remoteVideoRef.current && localStreamRef.current) {
-              remoteVideoRef.current.srcObject = localStreamRef.current;
-            }
-          };
-          setScreenSharing(true);
-        }
-      } catch (err) {
-        console.warn('Screen share canceled:', err);
-      }
-    }
-  };
+  const {
+    micActive,
+    cameraActive: videoActive,
+    screenSharing,
+    hasCameraPermission,
+    mediaErrorReason,
+    hasRemoteVideo,
+    hasRemoteAudio,
+    peerConnected,
+    connectionStatusText,
+    toggleMic,
+    toggleCamera: toggleVideo,
+    toggleScreenShare,
+  } = useWebRTC({
+    socket,
+    roomId: consultation?.id,
+    isPolite: user?.role !== 'DOCTOR',
+    events: CONSULTATION_WEBRTC_EVENTS,
+    enabled: Boolean(consultation?.id && user),
+    localVideoRef,
+    remoteVideoRef,
+    roleLabel: user?.role || 'PATIENT',
+  });
 
   useEffect(() => {
     if (id) fetchConsultation(id);
@@ -280,8 +217,8 @@ export const ConsultationRoomPage: React.FC = () => {
             {/* Top Bar inside Video */}
             <div className="flex items-center justify-between relative z-10 text-xs">
               <span className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-700">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Encrypted Peer Video Link
+                <span className={`w-2 h-2 rounded-full ${peerConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400 animate-ping'}`}></span>
+                {connectionStatusText}
               </span>
               <span className="bg-slate-800/80 backdrop-blur-md px-3 py-1.5 rounded-full text-slate-300">
                 {consultation.appointment.consultationType} Consultation
@@ -295,23 +232,23 @@ export const ConsultationRoomPage: React.FC = () => {
                 autoPlay
                 playsInline
                 className={`w-full h-full object-cover sm:object-contain transition-opacity duration-300 ${
-                  videoActive || screenSharing ? 'opacity-100' : 'opacity-0'
+                  hasRemoteVideo ? 'opacity-100' : 'opacity-0'
                 }`}
               />
 
-              {(!videoActive && !screenSharing) || hasCameraPermission === false ? (
-                <div className="text-center space-y-3 z-10">
+              {!hasRemoteVideo && (
+                <div className="text-center space-y-3 z-10 px-4">
                   <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center mx-auto text-white font-extrabold text-3xl shadow-2xl">
                     {partnerName.charAt(0)}
                   </div>
                   <h3 className="text-lg font-bold">{partnerName}</h3>
                   <p className="text-xs text-slate-400">
-                    {hasCameraPermission === false
-                      ? 'Camera permission unavailable in browser. Encrypted audio session active.'
-                      : 'Camera paused'}
+                    {peerConnected || hasRemoteAudio
+                      ? 'Connected — Encrypted audio active (waiting for partner video)'
+                      : connectionStatusText}
                   </p>
                 </div>
-              ) : null}
+              )}
 
               {/* Picture-in-Picture Local Feed */}
               <div className="absolute bottom-20 right-4 w-32 h-24 sm:w-44 sm:h-32 bg-slate-900 border-2 border-slate-700/80 rounded-2xl overflow-hidden shadow-2xl z-20">
@@ -320,10 +257,21 @@ export const ConsultationRoomPage: React.FC = () => {
                   autoPlay
                   playsInline
                   muted
-                  className={`w-full h-full object-cover ${videoActive ? 'opacity-100' : 'opacity-20'}`}
+                  className={`w-full h-full object-cover ${videoActive || screenSharing ? 'opacity-100' : 'opacity-20'}`}
                 />
+                {!videoActive && !screenSharing && (
+                  <div className="absolute inset-0 flex items-center justify-center text-center px-1 text-[10px] text-slate-300">
+                    {hasCameraPermission === false
+                      ? mediaErrorReason === 'device_busy'
+                        ? 'Camera busy in other tab'
+                        : mediaErrorReason === 'insecure_context'
+                        ? 'Use HTTPS/localhost'
+                        : 'Camera Off'
+                      : 'Camera Off'}
+                  </div>
+                )}
                 <div className="absolute bottom-1 left-2 bg-slate-950/80 text-[9px] text-white px-1.5 py-0.5 rounded font-mono">
-                  You
+                  {screenSharing ? 'Screen' : 'You'}
                 </div>
               </div>
 

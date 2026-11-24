@@ -34,46 +34,73 @@ export const EmergencyIncomingCallBanner: React.FC = () => {
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const ringIntervalRef = useRef<any>(null);
+  const incomingCallRef = useRef<IncomingEmergencyCallData | null>(null);
+  const activeVideoCallRef = useRef<IncomingEmergencyCallData | null>(null);
 
-  // Register doctor presence on duty for emergency calls
+  incomingCallRef.current = incomingCall;
+  activeVideoCallRef.current = activeVideoCall;
+
+  // Register doctor presence on duty for emergency calls (persists across reconnects)
   useEffect(() => {
     if (!socket || !user || user.role !== 'DOCTOR') return;
 
-    socket.emit('doctor_duty_online', {
-      doctorId: user.id,
-      doctorName: user.fullName,
-    });
+    const registerDuty = () => {
+      socket.emit('doctor_duty_online', {
+        doctorId: user.id,
+        doctorName: user.fullName,
+      });
+    };
 
-    // Listen for incoming patient emergency calls
-    socket.on('incoming_emergency_call', (data: IncomingEmergencyCallData) => {
+    if (socket.connected) {
+      registerDuty();
+    }
+
+    const handleIncomingCall = (data: IncomingEmergencyCallData) => {
       console.log('🚨 Emergency call received on Doctor Portal:', data);
       setIncomingCall(data);
       setRingSeconds(0);
       playSirenAudio();
-    });
+    };
 
-    // If another doctor accepted the call or patient cancelled
-    socket.on('emergency_call_claimed', ({ callId, claimedBy }: { callId: string; claimedBy: string }) => {
-      if (incomingCall && incomingCall.callId === callId) {
+    const handleCallClaimed = ({ callId }: { callId: string; claimedBy: string }) => {
+      if (incomingCallRef.current && incomingCallRef.current.callId === callId) {
         stopSirenAudio();
         setIncomingCall(null);
       }
-    });
+    };
 
-    socket.on('emergency_call_cancelled', ({ callId }: { callId: string }) => {
-      if (incomingCall && incomingCall.callId === callId) {
+    const handleCallCancelled = ({ callId }: { callId: string }) => {
+      if (incomingCallRef.current && incomingCallRef.current.callId === callId) {
         stopSirenAudio();
         setIncomingCall(null);
       }
-    });
+    };
+
+    const handleCallEnded = ({ callId }: { callId: string }) => {
+      if (incomingCallRef.current && incomingCallRef.current.callId === callId) {
+        stopSirenAudio();
+        setIncomingCall(null);
+      }
+      if (activeVideoCallRef.current && activeVideoCallRef.current.callId === callId) {
+        setActiveVideoCall(null);
+      }
+    };
+
+    socket.on('connect', registerDuty);
+    socket.on('incoming_emergency_call', handleIncomingCall);
+    socket.on('emergency_call_claimed', handleCallClaimed);
+    socket.on('emergency_call_cancelled', handleCallCancelled);
+    socket.on('emergency_call_ended', handleCallEnded);
 
     return () => {
-      socket.off('incoming_emergency_call');
-      socket.off('emergency_call_claimed');
-      socket.off('emergency_call_cancelled');
+      socket.off('connect', registerDuty);
+      socket.off('incoming_emergency_call', handleIncomingCall);
+      socket.off('emergency_call_claimed', handleCallClaimed);
+      socket.off('emergency_call_cancelled', handleCallCancelled);
+      socket.off('emergency_call_ended', handleCallEnded);
       stopSirenAudio();
     };
-  }, [socket, user?.id, incomingCall?.callId]);
+  }, [socket, user?.id, user?.role, user?.fullName]);
 
   // Ring timer
   useEffect(() => {

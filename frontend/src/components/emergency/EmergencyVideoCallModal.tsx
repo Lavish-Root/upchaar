@@ -14,6 +14,8 @@ import {
   HeartPulse,
 } from 'lucide-react';
 import { Button } from '../common/Button';
+import { useSocket } from '../../context/SocketContext';
+import { useWebRTC, WebRTCEventConfig } from '../../hooks/useWebRTC';
 
 interface EmergencyVideoCallProps {
   callId: string;
@@ -24,6 +26,15 @@ interface EmergencyVideoCallProps {
   onEndCall: () => void;
 }
 
+const EMERGENCY_WEBRTC_EVENTS: WebRTCEventConfig = {
+  idKey: 'callId',
+  readyEvent: 'emergency_video_ready',
+  peerReadyEvent: 'emergency_peer_ready',
+  offerEvent: 'emergency_signal_offer',
+  answerEvent: 'emergency_signal_answer',
+  iceEvent: 'emergency_signal_ice',
+};
+
 export const EmergencyVideoCallModal: React.FC<EmergencyVideoCallProps> = ({
   callId,
   partnerName,
@@ -32,18 +43,39 @@ export const EmergencyVideoCallModal: React.FC<EmergencyVideoCallProps> = ({
   patientPhone,
   onEndCall,
 }) => {
-  const [micActive, setMicActive] = useState(true);
-  const [cameraActive, setCameraActive] = useState(true);
-  const [screenSharing, setScreenSharing] = useState(false);
+  const { socket } = useSocket();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const screenStreamRef = useRef<MediaStream | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const isDoctorSelf = partnerRole === 'PATIENT';
+
+  const {
+    micActive,
+    cameraActive,
+    screenSharing,
+    hasCameraPermission,
+    mediaErrorReason,
+    hasRemoteVideo,
+    hasRemoteAudio,
+    peerConnected,
+    connectionStatusText,
+    toggleMic,
+    toggleCamera,
+    toggleScreenShare,
+  } = useWebRTC({
+    socket,
+    roomId: callId,
+    isPolite: !isDoctorSelf,
+    events: EMERGENCY_WEBRTC_EVENTS,
+    enabled: Boolean(callId),
+    localVideoRef,
+    remoteVideoRef,
+    roleLabel: isDoctorSelf ? 'DOCTOR' : 'PATIENT',
+  });
 
   // Call duration stopwatch
   useEffect(() => {
@@ -52,116 +84,6 @@ export const EmergencyVideoCallModal: React.FC<EmergencyVideoCallProps> = ({
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // Request camera and microphone access
-  useEffect(() => {
-    let isMounted = true;
-
-    async function initMedia() {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: true,
-          });
-
-          if (isMounted) {
-            localStreamRef.current = stream;
-            setHasCameraPermission(true);
-
-            if (localVideoRef.current) {
-              localVideoRef.current.srcObject = stream;
-            }
-
-            // In local/same-browser environment, mirror local stream to remote feed as peer preview
-            if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
-              remoteVideoRef.current.srcObject = stream;
-            }
-          }
-        } else {
-          setHasCameraPermission(false);
-        }
-      } catch (err) {
-        console.warn('Webcam/mic access not granted or unavailable:', err);
-        if (isMounted) setHasCameraPermission(false);
-      }
-    }
-
-    initMedia();
-
-    return () => {
-      isMounted = false;
-      // Stop all tracks on cleanup
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, []);
-
-  // Toggle Microphone
-  const toggleMic = () => {
-    if (localStreamRef.current) {
-      const audioTracks = localStreamRef.current.getAudioTracks();
-      audioTracks.forEach((track) => {
-        track.enabled = !micActive;
-      });
-    }
-    setMicActive(!micActive);
-  };
-
-  // Toggle Camera
-  const toggleCamera = () => {
-    if (localStreamRef.current) {
-      const videoTracks = localStreamRef.current.getVideoTracks();
-      videoTracks.forEach((track) => {
-        track.enabled = !cameraActive;
-      });
-    }
-    setCameraActive(!cameraActive);
-  };
-
-  // Toggle Screen Sharing
-  const toggleScreenShare = async () => {
-    if (screenSharing) {
-      // Stop screen sharing and revert to camera
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((track) => track.stop());
-        screenStreamRef.current = null;
-      }
-      if (remoteVideoRef.current && localStreamRef.current) {
-        remoteVideoRef.current.srcObject = localStreamRef.current;
-      }
-      setScreenSharing(false);
-    } else {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-          const screenStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-          });
-          screenStreamRef.current = screenStream;
-
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = screenStream;
-          }
-
-          // When user clicks browser native "Stop sharing" button
-          screenStream.getVideoTracks()[0].onended = () => {
-            setScreenSharing(false);
-            if (remoteVideoRef.current && localStreamRef.current) {
-              remoteVideoRef.current.srcObject = localStreamRef.current;
-            }
-          };
-
-          setScreenSharing(true);
-        }
-      } catch (err) {
-        console.warn('Screen sharing cancelled or unavailable:', err);
-      }
-    }
-  };
 
   // Toggle Fullscreen
   const toggleFullscreen = () => {
@@ -240,36 +162,52 @@ export const EmergencyVideoCallModal: React.FC<EmergencyVideoCallProps> = ({
 
         {/* Primary Main Video Area */}
         <div className="flex-1 relative bg-slate-950 flex items-center justify-center overflow-hidden">
-          {/* Main Video Element (Remote Peer or Shared Screen) */}
+          {/* WebRTC Peer Connection Status HUD */}
+          <div
+            className={`absolute top-3 left-3 z-20 px-3 py-1 rounded-full text-[11px] font-semibold backdrop-blur-md border flex items-center gap-1.5 ${
+              peerConnected
+                ? 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300'
+                : 'bg-slate-900/80 border-slate-700 text-amber-300'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                peerConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-ping'
+              }`}
+            ></span>
+            <span>{connectionStatusText}</span>
+          </div>
+
+          {/* Main Video Element (Remote Peer Feed) */}
           <video
             ref={remoteVideoRef}
             autoPlay
             playsInline
             className={`w-full h-full object-cover sm:object-contain transition-opacity duration-300 ${
-              cameraActive || screenSharing ? 'opacity-100' : 'opacity-0'
+              hasRemoteVideo ? 'opacity-100' : 'opacity-0'
             }`}
           />
 
-          {/* Fallback if no camera permission or camera toggled off */}
-          {(!cameraActive && !screenSharing) || hasCameraPermission === false ? (
+          {/* Waiting / Audio-Only Overlay while Remote Video is absent */}
+          {!hasRemoteVideo && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-4">
               <div className="w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-white text-3xl font-extrabold shadow-2xl">
                 {partnerName.charAt(0)}
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">{partnerName}</h3>
-                <p className="text-sm text-slate-400">
-                  {hasCameraPermission === false
-                    ? 'Camera access unavailable in browser. Audio call active.'
-                    : 'Camera is currently paused.'}
+                <p className="text-sm text-slate-400 mt-1">
+                  {peerConnected || hasRemoteAudio
+                    ? 'Connected — Audio active (waiting for partner camera)'
+                    : connectionStatusText}
                 </p>
                 <div className="mt-3 flex items-center justify-center gap-2 text-xs text-emerald-400">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Encrypted Audio Link Operational
+                  {peerConnected ? 'Encrypted P2P Session Active' : 'Waiting for Partner Media Stream'}
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
 
           {/* Picture-in-Picture Local Camera Feed */}
           <div className="absolute bottom-20 right-4 sm:bottom-24 sm:right-6 w-36 h-48 sm:w-52 sm:h-36 bg-slate-900 border-2 border-slate-700/80 rounded-2xl overflow-hidden shadow-2xl z-20 group">
@@ -279,22 +217,30 @@ export const EmergencyVideoCallModal: React.FC<EmergencyVideoCallProps> = ({
               playsInline
               muted
               className={`w-full h-full object-cover transition-transform ${
-                cameraActive ? 'opacity-100' : 'opacity-20'
+                cameraActive || screenSharing ? 'opacity-100' : 'opacity-20'
               }`}
             />
-            {!cameraActive && (
-              <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400 font-medium">
-                Camera Off
+            {!cameraActive && !screenSharing && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2 text-[11px] text-slate-300 font-medium">
+                <span>
+                  {hasCameraPermission === false
+                    ? mediaErrorReason === 'insecure_context'
+                      ? 'Camera requires HTTPS or localhost'
+                      : mediaErrorReason === 'device_busy'
+                      ? 'Camera in use by another tab'
+                      : 'Local Camera Off'
+                    : 'Camera Off'}
+                </span>
               </div>
             )}
             <div className="absolute bottom-1.5 left-2 bg-slate-950/80 text-[10px] text-white px-2 py-0.5 rounded font-mono">
-              You (Local)
+              {screenSharing ? 'Your Screen' : 'You (Local)'}
             </div>
           </div>
 
           {/* Screen Share Active Banner */}
           {screenSharing && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 backdrop-blur-md text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg border border-indigo-400/30 flex items-center gap-2">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-indigo-600/90 backdrop-blur-md text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg border border-indigo-400/30 flex items-center gap-2 z-20">
               <Monitor className="w-4 h-4 animate-pulse" />
               Screen Sharing Active • Displaying Live Screen to Peer
             </div>

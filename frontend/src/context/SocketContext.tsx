@@ -29,13 +29,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const socketBase = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || '';
     const socketInstance = io(`${socketBase}/consultations`, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
     });
 
     socketInstance.on('connect', () => {
       setIsConnected(true);
       console.log('Socket connected to /consultations:', socketInstance.id);
+      if (user.role === 'PATIENT') {
+        socketInstance.emit('patient_presence', { patientId: user.id });
+      }
     });
 
     socketInstance.on('disconnect', () => {
@@ -48,7 +54,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       socketInstance.disconnect();
     };
-  }, [user?.id]);
+  }, [user?.id, user?.role]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>
