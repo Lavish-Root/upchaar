@@ -417,9 +417,9 @@ export class AIService {
         );
       }
       return (
-        `### 🩺 Clinical Triage Assessment (Fever)\n` +
+        `### 🩺 Clinical Assessment & Triage (Fever)\n` +
         `Fever is your body's immunological response fighting an underlying viral or bacterial trigger.\n\n` +
-        `### 🌿 Evidence-Based Home Care Measures\n` +
+        `### 🌿 Evidence-Based Home Remedies & Care Measures\n` +
         `- **Golden Turmeric Milk:** 1 cup warm milk with 1/2 tsp turmeric powder at bedtime provides anti-inflammatory and pain-relieving curcumin.\n` +
         `- **Active Hydration:** Drink 2.5–3 liters of oral fluids (ORS electrolyte solution, coconut water, warm broths) to prevent dehydration.\n` +
         `- **Tepid Sponging:** Apply a cloth soaked in room-temperature water across forehead and nape (never use ice water).\n` +
@@ -469,9 +469,9 @@ export class AIService {
         );
       }
       return (
-        `### 🩺 Clinical Triage Assessment (Cold, Cough & Sore Throat)\n` +
+        `### 🩺 Clinical Assessment & Triage (Cold, Cough & Sore Throat)\n` +
         `Acute rhinopharyngitis is most commonly a self-limiting viral upper respiratory infection resolving within 7–10 days.\n\n` +
-        `### 🌿 Evidence-Based Home Care Measures\n` +
+        `### 🌿 Evidence-Based Home Remedies & Care Measures\n` +
         `- **Hypertonic Saline Gargles:** Gargle with warm salt water (1/2 tsp salt in 250ml warm water) 3–4 times daily to reduce mucosal edema.\n` +
         `- **Ginger, Tulsi & Honey Elixir:** 1 tsp fresh ginger juice with crushed holy basil (tulsi) and honey soothes irritated bronchial pathways.\n` +
         `- **Gentle Steam Inhalation:** Inhaling warm water steam for 5–8 minutes thins tenacious mucus secretions.\n` +
@@ -521,9 +521,9 @@ export class AIService {
         );
       }
       return (
-        `### 🩺 Clinical Triage Assessment (Acidity & Acid Reflux)\n` +
+        `### 🩺 Clinical Assessment & Triage (Acidity & Acid Reflux)\n` +
         `Gastric hyperacidity and dyspepsia are frequently caused by delayed gastric emptying, dietary triggers, and stress.\n\n` +
-        `### 🌿 Evidence-Based Home Care Measures\n` +
+        `### 🌿 Evidence-Based Home Remedies & Care Measures\n` +
         `- **Carom Seeds (Ajwain) & Black Salt:** Chew 1/2 tsp ajwain with a pinch of rock salt and warm water. Thymol provides rapid carminative relief.\n` +
         `- **Chilled Milk or Probiotic Buttermilk:** 1/2 glass cold skimmed milk acts as a fast-acting gastric buffer to neutralize acid irritation.\n` +
         `- **Fennel Seed Infusion:** Sip warm water infused with 1 tsp fennel seeds post meals to soothe esophageal spasms.\n` +
@@ -557,9 +557,9 @@ export class AIService {
         );
       }
       return (
-        `### 🩺 Clinical Triage Assessment (Headache)\n` +
+        `### 🩺 Clinical Assessment & Triage (Headache)\n` +
         `Most common headaches are tension-type or dehydration-related headaches stemming from cervical muscle contraction and ocular fatigue.\n\n` +
-        `### 🌿 Evidence-Based Home Care Measures\n` +
+        `### 🌿 Evidence-Based Home Remedies & Care Measures\n` +
         `- **Prompt Hydration:** Drink 500ml of water immediately; mild dehydration is one of the most frequent triggers.\n` +
         `- **Temperature Compress:** Place a cold pack across your forehead for vascular headaches, or warm compress on your neck for tension tightness.\n` +
         `- **Ginger Infusion:** Fresh ginger tea inhibits prostaglandin synthesis and reduces headache intensity and accompanying nausea.\n` +
@@ -591,9 +591,9 @@ export class AIService {
     }
 
     return (
-      `### 🩺 Clinical Triage Assessment\n` +
+      `### 🩺 Clinical Assessment & Triage\n` +
       `Regarding your health inquiry: "${query}".\n\n` +
-      `### 🌿 Evidence-Based Supportive Self-Care\n` +
+      `### 🌿 Evidence-Based Home Remedies & Supportive Self-Care\n` +
       `- **Steady Hydration:** Maintain 2.5–3 liters of clean fluid intake daily.\n` +
       `- **Restorative Sleep:** Ensure 7–8 hours of restful sleep to optimize immune regeneration.\n` +
       `- **Clean Nutrition:** Favor warm, freshly prepared, low-inflammatory meals.\n\n` +

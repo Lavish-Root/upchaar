@@ -1,21 +1,41 @@
 {
-  "name": "praansewa-monorepo",
+  "name": "ai-upchaar",
   "version": "1.0.0",
-  "description": "PraanSewa - Complete Healthcare Management Platform",
+  "description": "AI Upchaar / PraanSewa - Intelligent Rural Healthcare Platform",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "npm --prefix frontend run build",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "vite",
+    "dev:portal": "vite",
+    "dev:monorepo": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
+    "build": "vite build",
+    "build:portal": "vite build",
     "build:backend": "npm --prefix backend run build",
     "build:frontend": "npm --prefix frontend run build",
+    "preview": "vite preview",
     "prisma:generate": "npm --prefix backend run prisma:generate",
     "prisma:migrate": "npm --prefix backend run prisma:migrate",
     "prisma:seed": "npm --prefix backend run prisma:seed",
     "test": "npm --prefix backend test"
   },
+  "dependencies": {
+    "@google/genai": "^1.33.0",
+    "@neondatabase/serverless": "^1.2.1",
+    "drizzle-orm": "^0.45.4",
+    "lottie-react": "^3.1.2",
+    "lucide-react": "^0.561.0",
+    "peerjs": "^1.5.5",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "recharts": "^3.5.1"
+  },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^8.2.2",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }

@@ -1,24 +1,30 @@
 # Dependencies
 node_modules/
 */node_modules/
+server/node_modules/
 
-# Environment Variables & Secrets
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
-backend/.env
-frontend/.env
-
-# Build outputs
+# Production Build outputs
 dist/
 */dist/
+dist-ssr/
 build/
 */build/
 
-# Logs
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+server/.env
+server/.env.*
+!server/.env.example
+
+# Logs & Debug
 logs/
 *.log
 npm-debug.log*
@@ -26,9 +32,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+tsc_errors.txt
 
-# Coverage directory used by tools like istanbul
+# Testing & Coverage
 coverage/
+testsprite_tests
 
 # OS generated files
 .DS_Store
@@ -48,3 +56,4 @@ Thumbs.db
 .stylelintcache
 *.tsbuildinfo
 .vite/
+.vercel/
