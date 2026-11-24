@@ -93,6 +93,7 @@ export class AIController {
         conversationId: convId,
         message: savedAssistantMsg,
         reply: result.reply,
+        disclaimer: result.disclaimer,
         isEmergency: result.isEmergency,
         urgencyLevel: result.urgencyLevel,
         emergencyCategory: result.emergencyCategory,

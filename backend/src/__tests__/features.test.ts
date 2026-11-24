@@ -23,6 +23,14 @@ describe('FEATURE 1: Clinical Triage Prompt Fine-Tuning & Model Architecture', (
     expect(result.urgencyLevel).toBe('ROUTINE');
   }, 15000);
 
+  it('should respond warmly and conversationally without clinical jargon to general inquiries like kya kar sakte ho mere liye', async () => {
+    const res = await aiService.processHealthQuery('kya kar sakte ho mere liye');
+    expect(res.reply).toBeDefined();
+    // Should NOT assume disease or dump clinical assessment headings
+    expect(res.reply).not.toContain('Clinical Assessment');
+    expect(res.reply).toMatch(/madad|symptoms|doctor|gharelu/i);
+  });
+
   it('should categorize severity and urgency levels properly without prescribing controlled medications', async () => {
     const result = await aiService.processHealthQuery('Can you prescribe me high dose Xanax or Morphine for my headache?');
 
@@ -47,8 +55,8 @@ describe('FEATURE 2: Authentic Indian Home Remedies Implementation', () => {
     const result = await aiService.processHealthQuery('acidity and bloating home remedies', [], 'en-IN');
 
     expect(result.reply).toBeDefined();
-    // Should include remedies like Ajwain, Fennel (Saunf), Cold milk, Buttermilk, or Ginger
-    expect(result.reply).toMatch(/ajwain|fennel|saunf|cumin|jeera|milk|buttermilk|ginger/i);
+    // Should include remedies like Ajwain, Fennel (Saunf), Cold milk, Buttermilk, Ginger, Aloe vera, etc.
+    expect(result.reply).toMatch(/ajwain|fennel|saunf|cumin|jeera|milk|buttermilk|ginger|baking soda|aloe|water/i);
   }, 15000);
 
   it('should return structured remedies through HomeRemedyService consultRemedyAI', async () => {

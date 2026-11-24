@@ -487,6 +487,21 @@ export const AiHealthcareAssistantPage: React.FC = () => {
             Send
           </Button>
         </form>
+
+        {/* Persistent Legal & Clinical Notice Footer below text box */}
+        <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-1">
+          <p className="flex items-center gap-1.5 leading-tight">
+            <span className="font-semibold text-slate-700">⚠️ सूचना / Notice:</span>
+            Upchaar AI केवल प्राथमिक मार्गदर्शन व स्वास्थ्य जानकारी के लिए है। आपातकाल में 112 या 102 पर कॉल करें।
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/doctors')}
+            className="text-teal-700 hover:text-teal-950 font-semibold underline shrink-0"
+          >
+            Verified Doctors
+          </button>
+        </div>
       </div>
     </div>
   );
