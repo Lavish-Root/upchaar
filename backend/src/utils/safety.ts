@@ -8,12 +8,12 @@ export interface ClinicalTriageResult {
 
 const EMERGENCY_PATTERNS = [
   {
-    regex: /(chest pain|crushing pain|heart attack|radiating to (arm|jaw)|pressure in chest|seene me dard|chhati me dard|dil me dard|dil ka daura|छाती में दर्द|सीने में दर्द|दिल का दौरा)/i,
+    regex: /(chest pain|crushing pain|heart attack|radiating to (arm|jaw)|pressure in chest|seene.*dard|chhati.*dard|dil.*dard|dil ka daura|छाती.*दर्द|सीने.*दर्द|दिल का दौरा)/i,
     category: 'Acute Coronary Syndrome / Suspected Cardiac Event (हृदय आपातकाल)',
     action: 'IMMEDIATELY call 112 / 102 or proceed to the nearest emergency casualty. Do not exert or drive yourself.',
   },
   {
-    regex: /(cannot breathe|severe shortness of breath|gasping for air|turning blue|choking|stridor|saans lene me takleef|saans fulna|dam ghutna|साँस लेने में तकलीफ|सांस फूलना|दम घुटना)/i,
+    regex: /(cannot breathe|severe shortness of breath|gasping for air|turning blue|choking|stridor|saans.*(takleef|fulna|nahi|ruk|dikkat|ghutna)|साँ?स.*(तकलीफ|फूल|नहीं|दिक्कत|रुक|घुट))/i,
     category: 'Severe Respiratory Distress (गंभीर श्वसन संकट)',
     action: 'Seek emergency medical attention immediately. Sit upright, loosen tight clothes and call emergency services (112 / 102).',
   },

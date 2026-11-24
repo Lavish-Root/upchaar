@@ -68,9 +68,9 @@ describe('2. Clinical Emergency Triage & AI Safety Tests', () => {
 
   it('should append mandatory non-diagnostic disclaimer to AI health replies', async () => {
     const res = await aiService.processHealthQuery('What helps with mild tension headache?');
-    expect(res.reply).toContain('PraanSewa AI is an informational and triage support assistant');
+    expect(res.reply).toContain('Upchaar AI (PraanSewa) is an informational clinical triage support assistant');
     expect(res.isEmergency).toBe(false);
-  });
+  }, 15000);
 });
 
 describe('3. Role Authorization & Doctor Verification Rules', () => {

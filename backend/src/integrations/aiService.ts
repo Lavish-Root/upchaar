@@ -112,45 +112,57 @@ export class AIService {
 
     // 2. Call Groq API if configured or if provider is 'groq'
     if ((this.provider === 'groq' || config.ai.groqApiKey) && config.ai.groqApiKey) {
-      try {
-        console.log(`🤖 [AIService] Querying Groq API (${config.ai.groqModel || 'llama-3.3-70b-versatile'}) for health query...`);
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${config.ai.groqApiKey}`,
-          },
-          body: JSON.stringify({
-            model: config.ai.groqModel || 'llama-3.3-70b-versatile',
-            messages: [
-              {
-                role: 'system',
-                content: clinicalSystemPrompt,
-              },
-              ...history.slice(-6),
-              { role: 'user', content: query },
-            ],
-            temperature: 0.2,
-            max_tokens: 1200,
-          }),
-        });
+      const candidateModels = Array.from(new Set([
+        config.ai.groqModel || 'openai/gpt-oss-120b',
+        'openai/gpt-oss-20b',
+        'qwen/qwen3.8-27b',
+      ]));
 
-        if (response.ok) {
-          const data: any = await response.json();
-          const reply = data.choices?.[0]?.message?.content || '';
-          if (reply.trim()) {
-            return {
-              reply: `${reply.trim()}\n\n*${STANDARD_MEDICAL_DISCLAIMER}*`,
-              isEmergency: false,
-              urgencyLevel: 'ROUTINE',
-            };
+      for (const modelToTry of candidateModels) {
+        try {
+          console.log(`🤖 [AIService] Querying Groq API (${modelToTry}) for health query...`);
+          const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${config.ai.groqApiKey}`,
+            },
+            body: JSON.stringify({
+              model: modelToTry,
+              messages: [
+                {
+                  role: 'system',
+                  content: clinicalSystemPrompt,
+                },
+                ...history.slice(-6),
+                { role: 'user', content: query },
+              ],
+              temperature: 0.2,
+              max_tokens: 1200,
+            }),
+          });
+
+          if (response.ok) {
+            const data: any = await response.json();
+            const reply = data.choices?.[0]?.message?.content || '';
+            if (reply.trim()) {
+              return {
+                reply: `${reply.trim()}\n\n*${STANDARD_MEDICAL_DISCLAIMER}*`,
+                isEmergency: false,
+                urgencyLevel: 'ROUTINE',
+              };
+            }
+          } else {
+            const errText = await response.text();
+            console.warn(`[AIService] Groq API (${modelToTry}) HTTP ${response.status}:`, errText);
+            // If rate limit (429), loop continues to try next candidate model
+            if (response.status === 429) {
+              continue;
+            }
           }
-        } else {
-          const errText = await response.text();
-          console.warn(`[AIService] Groq API HTTP ${response.status}:`, errText);
+        } catch (err) {
+          console.warn(`[AIService] Groq API (${modelToTry}) error:`, err);
         }
-      } catch (err) {
-        console.warn('[AIService] Groq API call error:', err);
       }
     }
 
