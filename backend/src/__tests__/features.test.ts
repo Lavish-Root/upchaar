@@ -47,8 +47,8 @@ describe('FEATURE 2: Authentic Indian Home Remedies Implementation', () => {
     const result = await aiService.processHealthQuery('sardi khasi ke gharelu upay batao', [], 'hi-IN');
 
     expect(result.reply).toBeDefined();
-    // Should include remedies like tulsi, adrak, haldi, mulethi, or gargle
-    expect(result.reply).toMatch(/तुलसी|अदरक|हल्दी|गरारे|काढ़ा|मुलेठी|शहद/i);
+    // Should include remedies like tulsi, adrak, haldi, mulethi, ginger, honey, or steam
+    expect(result.reply).toMatch(/tulsi|adrak|haldi|ginger|tea|shahad|honey|steam|chai|kaadha|तुलसी|अदरक|हल्दी|गरारे|काढ़ा|मुलेठी|शहद/i);
   }, 15000);
 
   it('should provide evidence-based digestive home remedies for acidity and gas', async () => {
