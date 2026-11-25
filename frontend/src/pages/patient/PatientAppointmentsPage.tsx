@@ -44,9 +44,11 @@ export const PatientAppointmentsPage: React.FC = () => {
     setLoading(true);
     try {
       const res: any = await api.get('/patients/appointments', { params: { type } });
-      if (res.data) setAppointments(res.data);
+      const appts = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
+      setAppointments(appts);
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching appointments:', err);
+      setAppointments([]);
     } finally {
       setLoading(false);
     }

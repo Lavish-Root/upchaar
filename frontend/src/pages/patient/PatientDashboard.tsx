@@ -50,7 +50,8 @@ export const PatientDashboard: React.FC = () => {
       ]);
 
       if (overviewRes.data) setStats(overviewRes.data);
-      if (apptRes.data) setUpcomingAppointments(apptRes.data);
+      const appts = Array.isArray(apptRes?.data) ? apptRes.data : (Array.isArray(apptRes) ? apptRes : []);
+      setUpcomingAppointments(appts);
       if (rxRes.data) setRecentPrescriptions(rxRes.data.slice(0, 3));
       if (docsRes.data) setFeaturedDoctors(docsRes.data.slice(0, 3));
     } catch (err) {

@@ -7,7 +7,7 @@ import { Role } from '@prisma/client';
 const router = Router();
 
 router.use(authenticateToken);
-router.use(requireRole([Role.PATIENT, Role.ADMIN]));
+router.use(requireRole([Role.PATIENT, Role.ADMIN, Role.DOCTOR]));
 
 router.get('/profile', (req, res, next) => patientController.getProfile(req, res, next));
 router.put('/profile', (req, res, next) => patientController.updateProfile(req, res, next));

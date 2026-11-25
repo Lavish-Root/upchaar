@@ -99,16 +99,30 @@ export class PatientService {
 
   async getAppointments(patientId: string, type?: 'upcoming' | 'past' | 'all') {
     try {
-      const now = new Date();
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
       const whereClause: any = { patientId };
 
       if (type === 'upcoming') {
-        whereClause.appointmentDate = { gte: now };
-        whereClause.status = { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS] };
+        whereClause.OR = [
+          {
+            appointmentDate: { gte: startOfToday },
+            status: { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS] },
+          },
+          {
+            status: { in: [AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS] },
+          },
+        ];
       } else if (type === 'past') {
         whereClause.OR = [
-          { appointmentDate: { lt: now } },
           { status: { in: [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED] } },
+          {
+            AND: [
+              { appointmentDate: { lt: startOfToday } },
+              { status: { notIn: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED, AppointmentStatus.IN_PROGRESS] } },
+            ],
+          },
         ];
       }
 
