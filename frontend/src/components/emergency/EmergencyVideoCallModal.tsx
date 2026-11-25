@@ -183,8 +183,14 @@ export const EmergencyVideoCallModal: React.FC<EmergencyVideoCallProps> = ({
             ref={remoteVideoRef}
             autoPlay
             playsInline
+            onLoadedMetadata={(e) => {
+              (e.target as HTMLVideoElement).play().catch(() => {});
+            }}
+            onCanPlay={(e) => {
+              (e.target as HTMLVideoElement).play().catch(() => {});
+            }}
             className={`w-full h-full object-cover sm:object-contain transition-opacity duration-300 ${
-              hasRemoteVideo ? 'opacity-100' : 'opacity-0'
+              hasRemoteVideo ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'
             }`}
           />
 

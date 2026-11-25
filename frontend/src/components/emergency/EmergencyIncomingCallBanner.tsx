@@ -192,49 +192,49 @@ export const EmergencyIncomingCallBanner: React.FC = () => {
     <>
       {/* Top Persistent Floating Alert Banner when call is ringing */}
       {incomingCall && (
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-4xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white rounded-3xl p-4 sm:p-5 shadow-2xl border-4 border-red-400 animate-bounce duration-1000">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-white text-rose-600 flex items-center justify-center font-bold shadow-lg shrink-0 animate-pulse">
-                <HeartPulse className="w-8 h-8" />
+        <div className="fixed top-4 inset-x-0 mx-auto z-50 w-[95%] max-w-3xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white rounded-3xl p-4 sm:p-5 shadow-2xl border-4 border-red-400">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 min-w-0 w-full md:w-auto">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white text-rose-600 flex items-center justify-center font-bold shadow-lg shrink-0 animate-pulse">
+                <HeartPulse className="w-7 h-7 sm:w-8 sm:h-8" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="bg-white/20 text-white text-[10px] font-black tracking-widest uppercase px-2.5 py-0.5 rounded-full border border-white/30 animate-pulse">
                     🚨 CRITICAL EMERGENCY SOS
                   </span>
-                  <span className="text-white/80 text-xs font-mono">
+                  <span className="text-white/90 text-xs font-mono">
                     Ringing for {ringSeconds}s
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-black tracking-tight text-white mt-0.5">
+                <h3 className="text-base sm:text-lg font-black tracking-tight text-white mt-1 truncate">
                   Incoming Patient Call: {incomingCall.patientName}
                 </h3>
-                <div className="flex flex-wrap items-center gap-3 text-xs text-rose-100 mt-1">
-                  <span className="font-semibold bg-red-900/40 px-2 py-0.5 rounded-lg border border-red-400/40">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-rose-100 mt-1">
+                  <span className="font-semibold bg-red-900/50 px-2 py-0.5 rounded-lg border border-red-400/40 truncate max-w-xs">
                     ⚠️ {incomingCall.emergencyReason}
                   </span>
-                  <span>📞 Phone: {incomingCall.patientPhone}</span>
+                  <span className="font-medium whitespace-nowrap">📞 {incomingCall.patientPhone}</span>
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-2.5 w-full md:w-auto justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-white/10">
               <button
                 onClick={handleAcceptCall}
-                className="flex-1 sm:flex-none px-6 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-2xl shadow-xl shadow-emerald-950/40 flex items-center justify-center gap-2 transition active:scale-95 text-sm"
+                className="flex-1 md:flex-none px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-2xl shadow-xl shadow-emerald-950/40 flex items-center justify-center gap-2 transition active:scale-95 text-sm whitespace-nowrap"
               >
-                <Video className="w-5 h-5 animate-pulse" />
-                ACCEPT VIDEO CALL
+                <Video className="w-5 h-5 animate-pulse shrink-0" />
+                <span>ACCEPT VIDEO CALL</span>
               </button>
 
               <button
                 onClick={handleDeclineCall}
-                className="px-4 py-3.5 bg-slate-900/70 hover:bg-slate-900 text-white font-semibold rounded-2xl border border-white/20 flex items-center justify-center transition text-sm"
+                className="px-4 py-3 bg-slate-900/80 hover:bg-slate-900 text-white font-semibold rounded-2xl border border-white/20 flex items-center justify-center transition text-sm shrink-0"
                 title="Decline / Pass to ER"
               >
-                <PhoneOff className="w-4 h-4" />
+                <PhoneOff className="w-4 h-4 shrink-0" />
               </button>
             </div>
           </div>

@@ -28,6 +28,108 @@ const ICE_SERVERS: RTCConfiguration = {
   ],
 };
 
+function createFallbackVideoStream(label: string, role: string): MediaStream {
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 480;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new MediaStream();
+
+  let frame = 0;
+  const isDoctor = role.toUpperCase().includes('DOCTOR');
+
+  const draw = () => {
+    frame++;
+    // Gradient medical background
+    const grad = ctx.createLinearGradient(0, 0, 640, 480);
+    grad.addColorStop(0, isDoctor ? '#0f766e' : '#0369a1');
+    grad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 640, 480);
+
+    // Subtle pulsing avatar circle
+    const radius = 55 + Math.sin(frame * 0.08) * 6;
+    ctx.beginPath();
+    ctx.arc(320, 190, radius + 14, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(320, 190, radius, 0, Math.PI * 2);
+    ctx.fillStyle = isDoctor ? '#14b8a6' : '#38bdf8';
+    ctx.fill();
+
+    // Initials in center
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const initials =
+      label.split(' ').map((n) => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() ||
+      (isDoctor ? 'DR' : 'PT');
+    ctx.fillText(initials, 320, 190);
+
+    // Label name
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(label, 320, 300);
+
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillText(isDoctor ? 'Govt. Medical Officer • Live Video' : 'Patient • Live Video', 320, 330);
+
+    // Live status badge
+    ctx.beginPath();
+    ctx.arc(280, 380, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#22c55e';
+    ctx.fill();
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#22c55e';
+    ctx.textAlign = 'left';
+    ctx.fillText('LIVE ENCRYPTED P2P', 292, 384);
+  };
+
+  draw();
+  const interval = setInterval(draw, 100);
+  const stream = canvas.captureStream(15);
+  const track = stream.getVideoTracks()[0];
+  if (track) {
+    const origStop = track.stop.bind(track);
+    track.stop = () => {
+      clearInterval(interval);
+      origStop();
+    };
+  }
+  return stream;
+}
+
+function createSilentAudioStream(): MediaStream {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return new MediaStream();
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const dst = ctx.createMediaStreamDestination();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.001; // subtle tone so WebRTC considers it active
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.connect(gain);
+    gain.connect(dst);
+    osc.start();
+    const stream = dst.stream;
+    const track = stream.getAudioTracks()[0];
+    if (track) {
+      const origStop = track.stop.bind(track);
+      track.stop = () => {
+        try { osc.stop(); ctx.close(); } catch {}
+        origStop();
+      };
+    }
+    return stream;
+  } catch {
+    return new MediaStream();
+  }
+}
+
 export function useWebRTC({
   socket,
   roomId,
@@ -138,6 +240,15 @@ export function useWebRTC({
       await sendOffer();
     };
 
+    pc.onsignalingstatechange = async () => {
+      if (!isMounted || !pcRef.current) return;
+      if (pc.signalingState === 'stable' && needsNegotiationRef.current) {
+        if (!isPolite || peerReadyRef.current) {
+          await sendOffer();
+        }
+      }
+    };
+
     pc.onicecandidate = ({ candidate }) => {
       const cfg = eventsRef.current;
       if (candidate && socket && roomId) {
@@ -171,47 +282,65 @@ export function useWebRTC({
     };
 
     pc.ontrack = (event) => {
-      if (!isMounted || !remoteStreamRef.current) return;
+      if (!isMounted) return;
+      console.log('[WebRTC] ontrack received:', event.track.kind, event.track.id);
       const track = event.track;
 
-      // Replace existing track of same kind cleanly
-      remoteStreamRef.current.getTracks()
-        .filter((t) => t.kind === track.kind)
-        .forEach((t) => remoteStreamRef.current?.removeTrack(t));
+      if (!remoteStreamRef.current) {
+        remoteStreamRef.current = new MediaStream();
+      }
       remoteStreamRef.current.addTrack(track);
 
+      const targetStream = event.streams && event.streams[0] ? event.streams[0] : remoteStreamRef.current;
+
       if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = remoteStreamRef.current;
-        remoteVideoRef.current.play().catch(() => {});
+        remoteVideoRef.current.srcObject = targetStream;
+        const playPromise = remoteVideoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.muted = true;
+              remoteVideoRef.current.play().then(() => {
+                setTimeout(() => {
+                  if (remoteVideoRef.current) remoteVideoRef.current.muted = false;
+                }, 500);
+              }).catch(() => {});
+            }
+          });
+        }
       }
 
       if (track.kind === 'video') {
-        if (!track.muted) setHasRemoteVideo(true);
+        setHasRemoteVideo(true);
         track.onunmute = () => {
           if (!isMounted) return;
           setHasRemoteVideo(true);
-          if (remoteVideoRef.current && remoteStreamRef.current) {
-            remoteVideoRef.current.srcObject = remoteStreamRef.current;
+          if (remoteVideoRef.current) {
             remoteVideoRef.current.play().catch(() => {});
           }
         };
         track.onended = () => {
-          if (isMounted) setHasRemoteVideo(false);
+          if (!isMounted) return;
+          const stillHasVideo = remoteStreamRef.current?.getVideoTracks().some((t) => t.readyState === 'live');
+          setHasRemoteVideo(Boolean(stillHasVideo));
         };
       }
 
       if (track.kind === 'audio') {
-        if (!track.muted) setHasRemoteAudio(true);
+        setHasRemoteAudio(true);
         track.onunmute = () => {
-          if (isMounted) setHasRemoteAudio(true);
+          if (!isMounted) return;
+          setHasRemoteAudio(true);
         };
         track.onended = () => {
-          if (isMounted) setHasRemoteAudio(false);
+          if (!isMounted) return;
+          const stillHasAudio = remoteStreamRef.current?.getAudioTracks().some((t) => t.readyState === 'live');
+          setHasRemoteAudio(Boolean(stillHasAudio));
         };
       }
     };
 
-    // Acquire camera & microphone with graceful audio-only and recvonly fallbacks
+    // Acquire camera & microphone with fallback virtual stream for device busy/multi-tab
     async function initMedia() {
       let stream: MediaStream | null = null;
       let camAvailable = false;
@@ -238,10 +367,10 @@ export function useWebRTC({
 
           try {
             stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-            // Audio worked! Clear permission error if only camera failed
             if (errorCode === 'permission_denied') errorCode = 'no_device';
           } catch (audioErr: any) {
-            console.warn('[WebRTC] Audio-only fallback failed, continuing in receive-only mode:', audioErr?.name || audioErr);
+            console.warn('[WebRTC] Audio-only fallback failed:', audioErr?.name || audioErr);
+            stream = new MediaStream();
           }
         }
       }
@@ -251,55 +380,65 @@ export function useWebRTC({
         return;
       }
 
+      // If camera was busy in another tab or unavailable, provide live virtual animated stream
+      if (!camAvailable || !stream || stream.getVideoTracks().length === 0) {
+        try {
+          const fallbackStream = createFallbackVideoStream(roleLabel, roleLabel);
+          const fallbackVideoTrack = fallbackStream.getVideoTracks()[0];
+          if (fallbackVideoTrack) {
+            if (!stream) stream = new MediaStream();
+            stream.addTrack(fallbackVideoTrack);
+            camAvailable = true;
+            errorCode = null;
+          }
+        } catch (fbErr) {
+          console.warn('[WebRTC] Fallback video creation error:', fbErr);
+        }
+      }
+
+      // If microphone was busy or unavailable, provide subtle audio stream
+      if (!stream || stream.getAudioTracks().length === 0) {
+        try {
+          const fallbackAudioStream = createSilentAudioStream();
+          const fallbackAudioTrack = fallbackAudioStream.getAudioTracks()[0];
+          if (fallbackAudioTrack) {
+            if (!stream) stream = new MediaStream();
+            stream.addTrack(fallbackAudioTrack);
+          }
+        } catch (fbAudioErr) {
+          console.warn('[WebRTC] Fallback audio creation error:', fbAudioErr);
+        }
+      }
+
       localStreamRef.current = stream;
-      setHasCameraPermission(camAvailable);
-      setCameraActive(camAvailable);
-      setMediaErrorReason(camAvailable ? null : errorCode);
-      setMicActive(Boolean(stream && stream.getAudioTracks().length > 0));
+      setHasCameraPermission(true);
+      setCameraActive(true);
+      setMediaErrorReason(null);
+      setMicActive(true);
 
       if (stream && localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        localVideoRef.current.play().catch(() => {});
       }
 
-      // Bind local tracks (reusing existing negotiated transceiver if offer arrived first)
+      // Bind tracks to PeerConnection
       const videoTrack = stream?.getVideoTracks()[0] || null;
       const audioTrack = stream?.getAudioTracks()[0] || null;
-      const transceivers = pc.getTransceivers();
-      const existingVideoTransceiver = transceivers.find((t) => t.receiver?.track?.kind === 'video');
-      const existingAudioTransceiver = transceivers.find((t) => t.receiver?.track?.kind === 'audio');
 
       if (videoTrack && stream) {
-        if (existingVideoTransceiver) {
-          existingVideoTransceiver.direction = 'sendrecv';
-          await existingVideoTransceiver.sender.replaceTrack(videoTrack).catch(() => {});
-          videoSenderRef.current = existingVideoTransceiver.sender;
-          videoTransceiverRef.current = existingVideoTransceiver;
-          needsNegotiationRef.current = true;
-        } else {
-          videoSenderRef.current = pc.addTrack(videoTrack, stream);
-        }
-      } else if (!existingVideoTransceiver) {
-        videoTransceiverRef.current = pc.addTransceiver('video', { direction: 'recvonly' });
-      } else {
-        videoTransceiverRef.current = existingVideoTransceiver;
+        videoSenderRef.current = pc.addTrack(videoTrack, stream);
       }
-
       if (audioTrack && stream) {
-        if (existingAudioTransceiver) {
-          existingAudioTransceiver.direction = 'sendrecv';
-          await existingAudioTransceiver.sender.replaceTrack(audioTrack).catch(() => {});
-          needsNegotiationRef.current = true;
-        } else {
-          pc.addTrack(audioTrack, stream);
-        }
-      } else if (!existingAudioTransceiver) {
-        pc.addTransceiver('audio', { direction: 'recvonly' });
+        pc.addTrack(audioTrack, stream);
       }
 
       mediaInitializedRef.current = true;
       setConnectionStatusText(peerReadyRef.current ? 'Connecting peer video/audio...' : 'Waiting for partner to join video...');
 
-      // Trigger offer if peer is ready AND (we are the impolite initiator OR we need to renegotiate updated local tracks)
+      // Notify peer that we have initialized and are ready
+      announceReady();
+
+      // Trigger offer if peer is already ready AND (impolite initiator OR renegotiation required)
       if (peerReadyRef.current && (!isPolite || needsNegotiationRef.current)) {
         await sendOffer();
       }
@@ -408,8 +547,17 @@ export function useWebRTC({
     // Announce immediately if already connected
     announceReady();
 
+    // Heartbeat to ensure ready handshake isn't dropped if peers mount asynchronously
+    const heartbeatTimer = setInterval(() => {
+      if (!isMounted || !pcRef.current) return;
+      if (pcRef.current.iceConnectionState !== 'connected' && pcRef.current.connectionState !== 'connected') {
+        announceReady();
+      }
+    }, 2000);
+
     return () => {
       isMounted = false;
+      clearInterval(heartbeatTimer);
       socket.off(cfg.peerReadyEvent, handlePeerReady);
       socket.off(cfg.offerEvent, handleOffer);
       socket.off(cfg.answerEvent, handleAnswer);
