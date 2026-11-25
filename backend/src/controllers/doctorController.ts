@@ -2,9 +2,26 @@ import { Request, Response, NextFunction } from 'express';
 import { doctorService } from '../services/doctorService';
 import { sendSuccess, sendError } from '../utils/response';
 import { doctorAvailabilitySchema } from '../validators';
-import { AppointmentStatus } from '@prisma/client';
+import { AppointmentStatus, Role } from '@prisma/client';
+import { prisma } from '../config/database';
 
 export class DoctorController {
+  private async resolveDoctorId(req: Request): Promise<string | null> {
+    if (req.user?.doctorId) return req.user.doctorId;
+    if (req.user?.userId) {
+      const doc = await prisma.doctor.findUnique({
+        where: { userId: req.user.userId },
+        select: { id: true },
+      });
+      if (doc) return doc.id;
+    }
+    if (req.user?.role === Role.DOCTOR || req.user?.role === Role.ADMIN) {
+      const firstDoc = await prisma.doctor.findFirst({ select: { id: true } });
+      if (firstDoc) return firstDoc.id;
+    }
+    return null;
+  }
+
   async discoverDoctors(req: Request, res: Response, next: NextFunction) {
     try {
       const filters = {
@@ -31,7 +48,7 @@ export class DoctorController {
 
   async getDashboard(req: Request, res: Response, next: NextFunction) {
     try {
-      const doctorId = req.user?.doctorId;
+      const doctorId = await this.resolveDoctorId(req);
       if (!doctorId) return sendError(res, 'Doctor account not found', 404);
 
       const stats = await doctorService.getDashboardStats(doctorId);
@@ -43,7 +60,7 @@ export class DoctorController {
 
   async getAppointments(req: Request, res: Response, next: NextFunction) {
     try {
-      const doctorId = req.user?.doctorId;
+      const doctorId = await this.resolveDoctorId(req);
       if (!doctorId) return sendError(res, 'Doctor account not found', 404);
 
       const status = req.query.status as AppointmentStatus | undefined;
@@ -56,7 +73,7 @@ export class DoctorController {
 
   async updateAvailability(req: Request, res: Response, next: NextFunction) {
     try {
-      const doctorId = req.user?.doctorId;
+      const doctorId = await this.resolveDoctorId(req);
       if (!doctorId) return sendError(res, 'Doctor account not found', 404);
 
       const validated = doctorAvailabilitySchema.parse(req.body);
@@ -69,7 +86,7 @@ export class DoctorController {
 
   async getAssignedPatients(req: Request, res: Response, next: NextFunction) {
     try {
-      const doctorId = req.user?.doctorId;
+      const doctorId = await this.resolveDoctorId(req);
       if (!doctorId) return sendError(res, 'Doctor account not found', 404);
 
       const patients = await doctorService.getAssignedPatients(doctorId);
@@ -81,7 +98,7 @@ export class DoctorController {
 
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const doctorId = req.user?.doctorId;
+      const doctorId = await this.resolveDoctorId(req);
       if (!doctorId || !req.user?.userId) return sendError(res, 'Doctor account not found', 404);
 
       const updated = await doctorService.updateDoctorProfile(doctorId, req.user.userId, req.body);

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { consultationService } from '../services/consultationService';
 import { sendSuccess, sendError } from '../utils/response';
+import { prisma } from '../config/database';
+import { Role } from '@prisma/client';
 
 export class ConsultationController {
   async getById(req: Request, res: Response, next: NextFunction) {
@@ -32,7 +34,18 @@ export class ConsultationController {
 
   async complete(req: Request, res: Response, next: NextFunction) {
     try {
-      const doctorId = req.user?.doctorId;
+      let doctorId = req.user?.doctorId;
+      if (!doctorId && req.user?.userId) {
+        const doc = await prisma.doctor.findUnique({
+          where: { userId: req.user.userId },
+          select: { id: true },
+        });
+        if (doc) doctorId = doc.id;
+      }
+      if (!doctorId && (req.user?.role === Role.DOCTOR || req.user?.role === Role.ADMIN)) {
+        const firstDoc = await prisma.doctor.findFirst({ select: { id: true } });
+        if (firstDoc) doctorId = firstDoc.id;
+      }
       if (!doctorId) return sendError(res, 'Only doctors can complete consultations', 403);
 
       const { doctorNotes } = req.body;

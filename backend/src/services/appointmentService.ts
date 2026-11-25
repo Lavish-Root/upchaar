@@ -166,6 +166,34 @@ export class AppointmentService {
       },
     });
 
+    // If marked completed, also update linked consultation record & create notification
+    if (status === AppointmentStatus.COMPLETED) {
+      try {
+        await prisma.consultation.updateMany({
+          where: { appointmentId: id },
+          data: {
+            status: ConsultationStatus.COMPLETED,
+            endedAt: new Date(),
+          },
+        });
+      } catch (err) {
+        console.warn('Could not update linked consultation status:', err);
+      }
+
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: existing.patient.user.id,
+            title: 'Consultation Completed',
+            message: `Your consultation with ${existing.doctor.user.fullName} has been completed.`,
+            type: NotificationType.APPOINTMENT,
+          },
+        });
+      } catch (err) {
+        console.warn('Could not create patient notification for completed consultation:', err);
+      }
+    }
+
     // Notify user of cancellation or status update
     if (status === AppointmentStatus.CANCELLED) {
       await prisma.notification.create({

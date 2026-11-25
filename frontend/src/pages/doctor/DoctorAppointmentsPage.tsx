@@ -42,9 +42,11 @@ export const DoctorAppointmentsPage: React.FC = () => {
       if (filterStatus !== 'ALL') params.status = filterStatus;
 
       const res: any = await api.get('/doctors/appointments', { params });
-      if (res.data) setAppointments(res.data);
+      const data = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+      setAppointments(data);
     } catch (err) {
       console.error(err);
+      setAppointments([]);
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,7 @@ export const DoctorAppointmentsPage: React.FC = () => {
         status,
         cancellationReason: reason,
       });
-      fetchAppointments();
+      await fetchAppointments();
       setRejectModalOpen(false);
     } catch (err: any) {
       alert(err.message || 'Failed to update status');
@@ -195,15 +197,23 @@ export const DoctorAppointmentsPage: React.FC = () => {
                   </>
                 )}
 
-                {appt.status === 'CONFIRMED' && (
+                {(appt.status === 'CONFIRMED' || appt.status === 'IN_PROGRESS') && (
                   <Button
                     size="sm"
                     variant="ghost"
+                    className="text-emerald-700 hover:bg-emerald-50 border border-emerald-200"
                     onClick={() => handleStatusChange(appt.id, 'COMPLETED')}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" />
                     Mark Completed
                   </Button>
+                )}
+
+                {appt.status === 'COMPLETED' && (
+                  <span className="inline-flex items-center text-xs text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                    Completed
+                  </span>
                 )}
               </div>
             </div>
