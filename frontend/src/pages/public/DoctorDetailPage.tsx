@@ -73,10 +73,7 @@ export const DoctorDetailPage: React.FC = () => {
       return;
     }
 
-    if (!reasonForVisit.trim()) {
-      setBookingError('Please describe the reason for your consultation.');
-      return;
-    }
+    const finalReason = reasonForVisit.trim() || 'General medical consultation';
 
     setBookingLoading(true);
     setBookingError('');
@@ -88,7 +85,7 @@ export const DoctorDetailPage: React.FC = () => {
         startTime,
         endTime,
         consultationType,
-        reasonForVisit,
+        reasonForVisit: finalReason,
       };
 
       const res: any = await api.post('/appointments', payload);
@@ -313,9 +310,8 @@ export const DoctorDetailPage: React.FC = () => {
                     rows={2}
                     value={reasonForVisit}
                     onChange={(e) => setReasonForVisit(e.target.value)}
-                    placeholder="Briefly describe your symptoms or medical concerns..."
+                    placeholder="Briefly describe your symptoms or medical concerns (optional)..."
                     className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-                    required
                   />
                 </div>
 

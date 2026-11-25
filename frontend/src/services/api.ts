@@ -47,7 +47,14 @@ api.interceptors.response.use(
       }
     }
 
-    const message = error.response?.data?.error?.message || error.message || 'An unexpected error occurred';
+    const details = error.response?.data?.error?.details;
+    let message = error.response?.data?.error?.message || error.message || 'An unexpected error occurred';
+    if (Array.isArray(details) && details.length > 0) {
+      const detailMsgs = details.map((d: any) => d.message || `${d.field} is invalid`).filter(Boolean).join(', ');
+      if (detailMsgs) {
+        message = detailMsgs;
+      }
+    }
     return Promise.reject(new Error(message));
   }
 );

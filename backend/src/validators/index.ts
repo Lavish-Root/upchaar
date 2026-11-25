@@ -57,7 +57,10 @@ export const bookAppointmentSchema = z.object({
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Start time must be HH:MM format'),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'End time must be HH:MM format'),
   consultationType: z.enum(['IN_PERSON', 'VIDEO', 'AUDIO']).default('IN_PERSON'),
-  reasonForVisit: z.string().min(5, 'Reason for visit must be at least 5 characters'),
+  reasonForVisit: z
+    .string()
+    .optional()
+    .transform((val) => (val && val.trim().length >= 2 ? val.trim() : 'General consultation')),
 });
 
 export const rescheduleAppointmentSchema = z.object({
